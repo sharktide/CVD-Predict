@@ -67,7 +67,7 @@ DATASETS: dict[str, dict] = {
     "paf_prediction": {
         "physionet_name": "afp",
         "version": "1.0.0",
-        "url": "https://physionet.org/files/afp/1.0.0/",
+        "url": "https://physionet.org/files/afpdb/1.0.0/",
         "local_dir": RAW_DIR / "paf_prediction",
         "description": "PAF Prediction Challenge — 100 long-term ECG segments, half preceding paroxysmal AF.",
     },
@@ -81,7 +81,7 @@ DATASETS: dict[str, dict] = {
     "non_eeg_neuro": {
         "physionet_name": "nneuro",
         "version": "1.0.0",
-        "url": "https://physionet.org/files/nneuro/1.0.0/",
+        "url": "https://physionet.org/files/noneeg/1.0.0/",
         "local_dir": RAW_DIR / "non_eeg_neuro",
         "description": "Non-EEG Neurological Status — EDA, temp, accel, HR, SpO2 from 20 adults under stress.",
     },
