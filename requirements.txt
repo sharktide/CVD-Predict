@@ -1,0 +1,25 @@
+# Core scientific stack
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.3
+
+# Deep learning
+tensorflow>=2.14
+
+# PhysioNet waveform I/O
+wfdb>=4.1
+
+# Biosignal processing (optional but recommended)
+# neurokit2>=0.2.5
+# biosppy>=2.0
+# heartpy>=2.7
+
+# HTTP downloads
+requests>=2.31
+
+# CoreML export (macOS only, optional)
+# coremltools>=7.0
+
+# Logging / notebooks
+tensorboard>=2.14
