@@ -1,2 +1,5 @@
 .env
 **/*.pyc
+data/raw/**
+physionet.org/**
+**/*.DS_STORE
