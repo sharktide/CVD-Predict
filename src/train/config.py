@@ -90,11 +90,29 @@ DATASETS: dict[str, dict] = {
 # ---------------------------------------------------------------------------
 # Signal processing constants
 # ---------------------------------------------------------------------------
-SAMPLING_RATE_HZ: int = 125  # defaultFs for PhysioNet waveform databases
-RESAMPLE_RATE_HZ: int = 1     # 1-minute aggregates → resample to 1 Hz
-BANDPASS_LOW_HZ: float = 0.5
-BANDPASS_HIGH_HZ: float = 8.0
+SAMPLING_RATE_HZ: int = 125   # default Fs for PhysioNet waveform databases
 BUTTERWORTH_ORDER: int = 4
+
+# ECG bandpass (0.5–40 Hz removes baseline wander and muscle noise)
+ECG_BANDPASS_LOW: float = 0.5
+ECG_BANDPASS_HIGH: float = 40.0
+
+# PPG bandpass (0.5–8 Hz isolates pulsatile component)
+PPG_BANDPASS_LOW: float = 0.5
+PPG_BANDPASS_HIGH: float = 8.0
+
+# ABP bandpass (0.5–20 Hz)
+ABP_BANDPASS_LOW: float = 0.5
+ABP_BANDPASS_HIGH: float = 20.0
+
+# HRV analysis
+HRV_WINDOW_SEC: float = 300.0    # 5-minute analysis window
+HRV_STEP_SEC: float = 60.0       # 1-minute step
+HRV_TACHOGRAM_FS: float = 4.0    # interpolation rate for frequency-domain
+
+# Beat detection
+MIN_HEART_RATE_BPM: float = 30.0
+MAX_HEART_RATE_BPM: float = 220.0
 
 # ---------------------------------------------------------------------------
 # Windowing
