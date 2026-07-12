@@ -5,7 +5,7 @@ scipy>=1.10
 scikit-learn>=1.3
 
 # Deep learning
-tensorflow>=2.14
+tensorflow>=2.21
 
 # PhysioNet waveform I/O
 wfdb>=4.1
