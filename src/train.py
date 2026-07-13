@@ -28,6 +28,14 @@ from src.losses import build_combined_loss
 from src.model import build_model
 from src.utils import ensure_dir, load_numpy, load_parquet, save_parquet, train_val_test_split
 
+# Columns to drop (90% NaN alpha2 HRV features that add noise)
+_DROP_COLS = {
+    "HRV_DFA_alpha2", "HRV_MFDFA_alpha2_Width", "HRV_MFDFA_alpha2_Peak",
+    "HRV_MFDFA_alpha2_Mean", "HRV_MFDFA_alpha2_Max", "HRV_MFDFA_alpha2_Delta",
+    "HRV_MFDFA_alpha2_Asymmetry", "HRV_MFDFA_alpha2_Fluctuation",
+    "HRV_MFDFA_alpha2_Increment",
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -129,6 +137,45 @@ def _oversample_undersample(
 
 
 # ---------------------------------------------------------------------------
+# PPG data augmentation
+# ---------------------------------------------------------------------------
+
+def _augment_ppg_batch(
+    X_ppg: np.ndarray,
+    noise_std: float = 0.02,
+    scale_range: tuple = (0.8, 1.2),
+    shift_range: int = 150,
+    rng: np.random.Generator = None,
+) -> np.ndarray:
+    """Apply random augmentation to a batch of PPG signals (in-place style)."""
+    if rng is None:
+        rng = np.random.default_rng()
+    out = X_ppg.copy()
+    n = len(out)
+
+    # 1. Gaussian noise
+    noise_mask = rng.random(n) < 0.5
+    if noise_mask.any():
+        noise = rng.normal(0, noise_std, size=out[noise_mask].shape).astype(np.float32)
+        out[noise_mask] += noise
+
+    # 2. Random amplitude scaling
+    scale_mask = rng.random(n) < 0.5
+    if scale_mask.any():
+        scales = rng.uniform(scale_range[0], scale_range[1], size=(scale_mask.sum(), 1, 1)).astype(np.float32)
+        out[scale_mask] *= scales
+
+    # 3. Random time shift (circular)
+    shift_mask = rng.random(n) < 0.5
+    if shift_mask.any():
+        shifts = rng.integers(-shift_range, shift_range + 1, size=shift_mask.sum())
+        for idx, s in zip(np.where(shift_mask)[0], shifts):
+            out[idx] = np.roll(out[idx], int(s), axis=0)
+
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Dataset construction
 # ---------------------------------------------------------------------------
 
@@ -195,7 +242,10 @@ def _build_dataset(
                     "raw_ppg", "wearable_ppg", "device_domain", "icu_domain",
                     "icu_type", "community_likeness_bin", "label_confidence_bin"}
         feat_cols = [c for c in features_df.columns if c not in exclude
+                     and c not in _DROP_COLS
                      and pd.api.types.is_numeric_dtype(features_df[c])]
+    else:
+        feat_cols = [c for c in feat_cols if c not in _DROP_COLS]
     X_feat = df[feat_cols].fillna(0.0).values.astype(np.float32)
 
     # Sample weights (label_confidence x importance_weight)
@@ -214,6 +264,15 @@ def _build_dataset(
             X_ppg, X_feat, y_event, y_acuity, y_icu_domain, y_device_domain,
             y_sensor_quality, sample_weights,
             max_control_ratio=train_config.get("max_control_ratio", 3.0),
+        )
+
+    # PPG augmentation (training only)
+    if is_training and train_config.get("augment_ppg", False):
+        X_ppg = _augment_ppg_batch(
+            X_ppg,
+            noise_std=train_config.get("aug_noise_std", 0.02),
+            scale_range=tuple(train_config.get("aug_scale_range", [0.8, 1.2])),
+            shift_range=train_config.get("aug_shift_range", 150),
         )
 
     outputs = {
@@ -286,6 +345,69 @@ class CalibrationCallback(tf.keras.callbacks.Callback):
             tf.summary.scalar("calibration/brier_score", brier, step=epoch)
 
         self.writer.flush()
+
+
+class ThresholdTuningCallback(tf.keras.callbacks.Callback):
+    """Find optimal classification threshold on validation set each epoch.
+
+    Scans thresholds 0.1–0.9 and picks the one maximising F1, then logs it.
+    The optimal threshold is stored in self.best_threshold for later use.
+    """
+
+    def __init__(self, val_ds: tf.data.Dataset, log_dir: str, log_freq: int = 5):
+        super().__init__()
+        self.val_ds = val_ds
+        self.log_dir = log_dir
+        self.log_freq = log_freq
+        self.best_threshold = 0.5
+
+    def on_epoch_end(self, epoch: int, logs=None):
+        if (epoch + 1) % self.log_freq != 0:
+            return
+
+        y_true, y_pred = [], []
+        for batch in self.val_ds:
+            x_batch, y_batch, _ = batch
+            preds = self.model(x_batch, training=False)
+            y_true.append(y_batch["event_output"].numpy())
+            y_pred.append(preds[0].numpy())
+
+        y_true = np.concatenate(y_true).ravel()
+        y_pred = np.concatenate(y_pred).ravel()
+
+        if len(np.unique(y_true)) < 2:
+            return
+
+        # Scan thresholds
+        from sklearn.metrics import f1_score, precision_score, recall_score
+        best_f1 = 0.0
+        best_t = 0.5
+        for t in np.arange(0.1, 0.91, 0.05):
+            preds_bin = (y_pred >= t).astype(int)
+            f1 = f1_score(y_true, preds_bin, zero_division=0)
+            if f1 > best_f1:
+                best_f1 = f1
+                best_t = t
+
+        self.best_threshold = float(best_t)
+
+        # Compute metrics at optimal threshold
+        preds_bin = (y_pred >= best_t).astype(int)
+        prec = precision_score(y_true, preds_bin, zero_division=0)
+        rec = recall_score(y_true, preds_bin, zero_division=0)
+
+        log_path = os.path.join(self.log_dir, "threshold_search")
+        ensure_dir(log_path)
+        writer = tf.summary.create_file_writer(log_path)
+        with writer.as_default():
+            tf.summary.scalar("threshold/best_threshold", best_t, step=epoch)
+            tf.summary.scalar("threshold/best_f1", best_f1, step=epoch)
+            tf.summary.scalar("threshold/precision_at_best", prec, step=epoch)
+            tf.summary.scalar("threshold/recall_at_best", rec, step=epoch)
+        writer.flush()
+
+        logger.info("Epoch %d: best_threshold=%.3f, F1=%.3f, Precision=%.3f, Recall=%.3f",
+                     epoch + 1, best_t, best_f1, prec, rec)
 
 
 # ---------------------------------------------------------------------------
@@ -455,6 +577,7 @@ def train(
             restore_best_weights=True,
         ),
         CalibrationCallback(val_ds, logs_dir, log_freq=5),
+        ThresholdTuningCallback(val_ds, logs_dir, log_freq=5),
     ]
 
     # Mixed precision (if requested and GPU available)
@@ -469,6 +592,11 @@ def train(
         callbacks=callbacks,
     )
 
+    # Retrieve optimal threshold from callback
+    threshold_cb = [c for c in callbacks if isinstance(c, ThresholdTuningCallback)]
+    optimal_threshold = threshold_cb[0].best_threshold if threshold_cb else 0.5
+    logger.info("Optimal threshold from validation: %.3f", optimal_threshold)
+
     # Save final model
     final_path = os.path.join(models_dir, "final_model.keras")
     model.save(final_path)
@@ -478,7 +606,291 @@ def train(
     with open(os.path.join(models_dir, "feature_columns.json"), "w") as f:
         json.dump(feat_cols, f)
 
+    # Save optimal threshold
+    with open(os.path.join(models_dir, "optimal_threshold.json"), "w") as f:
+        json.dump({"threshold": optimal_threshold}, f)
+
     return model
+
+
+# ---------------------------------------------------------------------------
+# K-fold cross-validation
+# ---------------------------------------------------------------------------
+
+def train_kfold(
+    n_folds: int = 5,
+    run_name_prefix: str = "cvd_risk_v3",
+) -> dict:
+    """Run k-fold CV and return averaged metrics across folds."""
+    from sklearn.model_selection import StratifiedKFold
+    from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+
+    paths = get_paths_config()
+    model_cfg = get_model_config()
+    train_cfg = get_training_config()
+
+    processed_dir = paths["processed_data_dir"]
+    features_df = load_parquet(os.path.join(processed_dir, "features.parquet"))
+    signals_df = load_parquet(os.path.join(processed_dir, "signals.parquet"))
+
+    # Merge cohort metadata
+    meta_path = os.path.join(processed_dir, "cohort_meta.parquet")
+    if os.path.exists(meta_path):
+        meta_df = load_parquet(meta_path)
+        features_df["patient_id"] = features_df["patient_id"].astype(str)
+        meta_df["patient_id"] = meta_df["patient_id"].astype(str)
+        features_df = features_df.merge(
+            meta_df[["patient_id", "acuity_score", "community_likeness",
+                      "importance_weight", "icu_type"]],
+            on="patient_id", how="left",
+        )
+        features_df["icu_domain"] = (
+            features_df.get("icu_type", pd.Series("unknown", index=features_df.index))
+            .isin(["SICU", "MICU", "CCU", "CSRU", "TSICU",
+                    "Medical Intensive Care Unit (MICU)",
+                    "Surgical Intensive Care Unit (SICU)",
+                    "Cardiovascular Intensive Care Unit (CSRU)",
+                    "Neuro Stepdown Intensive Care Unit (NSICU)",
+                    "Medical/Surgical Intensive Care Unit (MIC/SICU)"]).astype(np.int32)
+        )
+    else:
+        features_df["acuity_score"] = 0
+        features_df["community_likeness"] = 0.5
+        features_df["importance_weight"] = 1.0
+        features_df["icu_domain"] = 0
+        features_df["device_domain"] = 0
+
+    # Fill NaN in numeric columns with median
+    num_cols = features_df.select_dtypes(include=[np.number]).columns
+    for col in num_cols:
+        median_val = features_df[col].median()
+        if np.isfinite(median_val):
+            features_df[col] = features_df[col].fillna(median_val)
+        else:
+            features_df[col] = features_df[col].fillna(0.0)
+
+    # Drop alpha2 columns early
+    features_df = features_df.drop(columns=[c for c in _DROP_COLS if c in features_df.columns], errors="ignore")
+
+    # Patient-level stratified K-fold
+    patient_events = features_df.groupby("patient_id")["event_type"].apply(
+        lambda x: int(x.isin(["MI", "ARREST"]).any())
+    ).reset_index()
+    patient_events.columns = ["patient_id", "has_event"]
+
+    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
+    fold_metrics = []
+
+    for fold, (train_idx, test_idx) in enumerate(
+        skf.split(patient_events["patient_id"], patient_events["has_event"])
+    ):
+        logger.info("=" * 60)
+        logger.info("FOLD %d/%d", fold + 1, n_folds)
+        logger.info("=" * 60)
+
+        train_pids = patient_events.iloc[train_idx]["patient_id"].values
+        test_pids = patient_events.iloc[test_idx]["patient_id"].values
+
+        # Further split train into train+val (90/10)
+        rng = np.random.default_rng(42 + fold)
+        rng.shuffle(train_pids)
+        n_val = max(1, int(len(train_pids) * 0.1))
+        val_pids = train_pids[:n_val]
+        train_pids_final = train_pids[n_val:]
+
+        train_feat = features_df[features_df["patient_id"].isin(train_pids_final)]
+        val_feat = features_df[features_df["patient_id"].isin(val_pids)]
+        test_feat = features_df[features_df["patient_id"].isin(test_pids)]
+
+        train_sig = signals_df[signals_df["patient_id"].isin(train_pids_final)]
+        val_sig = signals_df[signals_df["patient_id"].isin(val_pids)]
+        test_sig = signals_df[signals_df["patient_id"].isin(test_pids)]
+
+        logger.info("Fold %d: train=%d, val=%d, test=%d windows",
+                     fold + 1, len(train_feat), len(val_feat), len(test_feat))
+
+        fold_run = f"{run_name_prefix}_fold{fold + 1}"
+
+        # Temporarily override config for this fold
+        orig_run = train_cfg.get("run_name")
+        train_cfg["run_name"] = fold_run
+
+        train_ds, feat_cols = _build_dataset(train_feat, train_sig, train_cfg, is_training=True)
+        val_ds, _ = _build_dataset(val_feat, val_sig, train_cfg, is_training=False)
+        test_ds, _ = _build_dataset(test_feat, test_sig, train_cfg, is_training=False)
+        train_cfg["feature_columns"] = feat_cols
+
+        # Build model
+        ppg_length = train_cfg.get("ppg_length", 7500)
+        feature_dim = len(feat_cols)
+        num_acuity = train_cfg.get("num_acuity_classes", 6)
+
+        model = build_model(
+            ppg_input_shape=(ppg_length, 1),
+            feature_dim=feature_dim,
+            num_event_classes=1,
+            num_acuity_classes=num_acuity,
+            num_sensor_quality_classes=3,
+            model_cfg=model_cfg,
+        )
+
+        # Compile
+        losses, loss_weights = build_combined_loss(train_cfg)
+        n_train_samples = len(train_feat)
+        batch_size = train_cfg.get("batch_size", 32)
+        steps_per_epoch = max(1, n_train_samples // batch_size)
+        total_steps = steps_per_epoch * train_cfg.get("epochs", 100)
+        warmup_steps = steps_per_epoch * train_cfg.get("warmup_epochs", 3)
+
+        lr_schedule = WarmupCosineDecay(
+            base_lr=train_cfg.get("lr", 3e-4),
+            warmup_steps=warmup_steps,
+            total_steps=total_steps,
+        )
+
+        model.compile(
+            optimizer=tf.keras.optimizers.AdamW(
+                learning_rate=lr_schedule,
+                weight_decay=train_cfg.get("weight_decay", 1e-4),
+            ),
+            loss=losses,
+            loss_weights=loss_weights,
+            metrics={
+                "event_output": [
+                    tf.keras.metrics.AUC(name="event_auc"),
+                    tf.keras.metrics.Precision(name="event_precision"),
+                    tf.keras.metrics.Recall(name="event_recall"),
+                ],
+                "acuity_output": ["accuracy"],
+                "icu_domain_output": ["accuracy"],
+                "device_domain_output": ["accuracy"],
+                "sensor_quality_output": ["accuracy"],
+            },
+        )
+
+        # Callbacks
+        logs_dir = os.path.join(paths["logs_dir"], fold_run)
+        models_dir = os.path.join(paths["models_dir"], fold_run)
+        ensure_dir(logs_dir)
+        ensure_dir(models_dir)
+
+        threshold_cb = ThresholdTuningCallback(val_ds, logs_dir, log_freq=3)
+        callbacks = [
+            tf.keras.callbacks.ModelCheckpoint(
+                os.path.join(models_dir, "best_model.keras"),
+                monitor="val_event_output_event_auc",
+                mode="max",
+                save_best_only=True,
+                save_weights_only=False,
+            ),
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_event_output_event_auc",
+                patience=train_cfg.get("early_stopping_patience", 15),
+                mode="max",
+                restore_best_weights=True,
+            ),
+            threshold_cb,
+        ]
+
+        # Fit
+        model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=train_cfg.get("epochs", 100),
+            callbacks=callbacks,
+            verbose=0,
+        )
+
+        # Evaluate on test fold
+        optimal_t = threshold_cb.best_threshold
+        y_true_all, y_prob_all = [], []
+        for batch in test_ds:
+            x_batch, y_batch, _ = batch
+            preds = model(x_batch, training=False)
+            y_true_all.append(y_batch["event_output"].numpy())
+            y_prob_all.append(preds[0].numpy())
+
+        y_true = np.concatenate(y_true_all).ravel()
+        y_prob = np.concatenate(y_prob_all).ravel()
+
+        if len(np.unique(y_true)) > 1:
+            auc = roc_auc_score(y_true, y_prob)
+        else:
+            auc = float("nan")
+
+        y_pred_opt = (y_prob >= optimal_t).astype(int)
+        y_pred_05 = (y_prob >= 0.5).astype(int)
+
+        f1_opt = f1_score(y_true, y_pred_opt, zero_division=0)
+        prec_opt = precision_score(y_true, y_pred_opt, zero_division=0)
+        rec_opt = recall_score(y_true, y_pred_opt, zero_division=0)
+        acc_opt = float((y_true == y_pred_opt).mean())
+
+        f1_05 = f1_score(y_true, y_pred_05, zero_division=0)
+        prec_05 = precision_score(y_true, y_pred_05, zero_division=0)
+        rec_05 = recall_score(y_true, y_pred_05, zero_division=0)
+        acc_05 = float((y_true == y_pred_05).mean())
+
+        fold_metrics.append({
+            "fold": fold + 1,
+            "threshold": optimal_t,
+            "auroc": auc,
+            "accuracy_opt": acc_opt,
+            "f1_opt": f1_opt,
+            "precision_opt": prec_opt,
+            "recall_opt": rec_opt,
+            "accuracy_05": acc_05,
+            "f1_05": f1_05,
+            "precision_05": prec_05,
+            "recall_05": rec_05,
+            "n_test": len(y_true),
+        })
+
+        logger.info("Fold %d: AUROC=%.3f | threshold=%.3f | Acc=%.1f%% F1=%.3f Prec=%.3f Rec=%.3f (optimal)",
+                     fold + 1, auc, optimal_t, acc_opt * 100, f1_opt, prec_opt, rec_opt)
+        logger.info("Fold %d: Acc@0.5=%.1f%% F1@0.5=%.3f Prec@0.5=%.3f Rec@0.5=%.3f",
+                     fold + 1, acc_05 * 100, f1_05, prec_05, rec_05)
+
+        # Cleanup
+        if orig_run:
+            train_cfg["run_name"] = orig_run
+
+    # Aggregate
+    df_metrics = pd.DataFrame(fold_metrics)
+    summary = {
+        "mean_auroc": df_metrics["auroc"].mean(),
+        "std_auroc": df_metrics["auroc"].std(),
+        "mean_accuracy_opt": df_metrics["accuracy_opt"].mean(),
+        "mean_f1_opt": df_metrics["f1_opt"].mean(),
+        "mean_precision_opt": df_metrics["precision_opt"].mean(),
+        "mean_recall_opt": df_metrics["recall_opt"].mean(),
+        "mean_accuracy_05": df_metrics["accuracy_05"].mean(),
+        "mean_f1_05": df_metrics["f1_05"].mean(),
+        "mean_precision_05": df_metrics["precision_05"].mean(),
+        "mean_recall_05": df_metrics["recall_05"].mean(),
+        "mean_threshold": df_metrics["threshold"].mean(),
+    }
+
+    logger.info("=" * 60)
+    logger.info("K-FOLD CV SUMMARY (%d folds):", n_folds)
+    logger.info("  AUROC:           %.3f +/- %.3f", summary["mean_auroc"], summary["std_auroc"])
+    logger.info("  Accuracy (opt):  %.1f%%", summary["mean_accuracy_opt"] * 100)
+    logger.info("  F1 (optimal t):  %.3f", summary["mean_f1_opt"])
+    logger.info("  Precision (opt): %.3f", summary["mean_precision_opt"])
+    logger.info("  Recall (opt):    %.3f", summary["mean_recall_opt"])
+    logger.info("  Threshold:       %.3f", summary["mean_threshold"])
+    logger.info("  Accuracy (@0.5): %.1f%%", summary["mean_accuracy_05"] * 100)
+    logger.info("  F1 (@0.5):       %.3f", summary["mean_f1_05"])
+    logger.info("  Precision (@0.5):%.3f", summary["mean_precision_05"])
+    logger.info("  Recall (@0.5):   %.3f", summary["mean_recall_05"])
+    logger.info("=" * 60)
+
+    # Save metrics
+    metrics_path = os.path.join(paths["models_dir"], run_name_prefix, "kfold_metrics.csv")
+    ensure_dir(os.path.dirname(metrics_path))
+    df_metrics.to_csv(metrics_path, index=False)
+
+    return summary
 
 
 # ---------------------------------------------------------------------------
@@ -486,5 +898,12 @@ def train(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import sys
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    train()
+
+    mode = sys.argv[1] if len(sys.argv) > 1 else "single"
+    if mode == "kfold":
+        n_folds = int(sys.argv[2]) if len(sys.argv) > 2 else 5
+        train_kfold(n_folds=n_folds)
+    else:
+        train()

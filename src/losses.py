@@ -79,12 +79,52 @@ class GradientReversalLayer(tf.keras.layers.Layer):
 # Combined training loss (used by train.py)
 # ---------------------------------------------------------------------------
 
+def asymmetric_focal_loss(gamma: float = 2.0, alpha: float = 0.25, fn_weight: float = 2.0):
+    """Focal loss that penalises false negatives *fn_weight* times more than false positives.
+
+    This pushes the model toward higher recall (fewer missed events) while
+    retaining focal-loss benefits for hard-example mining.
+    """
+
+    def _afocal(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+        y_true = tf.cast(y_true, tf.float32)
+        y_pred = tf.clip_by_value(y_pred, K.epsilon(), 1.0 - K.epsilon())
+
+        # Binary cross-entropy per element
+        bce = -y_true * tf.math.log(y_pred) - (1.0 - y_true) * tf.math.log(1.0 - y_pred)
+
+        # Focal modulating factor
+        p_t = y_true * y_pred + (1.0 - y_true) * (1.0 - y_pred)
+        modulating = tf.pow(1.0 - p_t, gamma)
+
+        # Alpha weighting
+        alpha_t = y_true * alpha + (1.0 - y_true) * (1.0 - alpha)
+
+        # Asymmetric weighting: upweight FN (y_true=1, y_pred≈0)
+        weight = y_true * fn_weight + (1.0 - y_true) * 1.0
+
+        per_sample = weight * alpha_t * modulating * bce
+        per_sample = tf.reduce_sum(per_sample, axis=-1)
+
+        return per_sample
+
+    return _afocal
+
+
 def build_combined_loss(train_config: dict):
     """Return a dict mapping output names -> loss functions and loss weights."""
-    event_loss_fn = focal_loss(
-        gamma=train_config.get("focal_gamma", 2.0),
-        alpha=train_config.get("focal_alpha", 0.25),
-    )
+    use_asymmetric = train_config.get("asymmetric_loss", False)
+    if use_asymmetric:
+        event_loss_fn = asymmetric_focal_loss(
+            gamma=train_config.get("focal_gamma", 2.0),
+            alpha=train_config.get("focal_alpha", 0.25),
+            fn_weight=train_config.get("fn_weight", 2.0),
+        )
+    else:
+        event_loss_fn = focal_loss(
+            gamma=train_config.get("focal_gamma", 2.0),
+            alpha=train_config.get("focal_alpha", 0.25),
+        )
     losses = {
         "event_output": event_loss_fn,
         "acuity_output": "sparse_categorical_crossentropy",

@@ -1,4 +1,4 @@
-# Model architecture configuration (v2 — reduced to ~100K params)
+# Model architecture configuration (v3 — v2 arch + alpha2 drop + threshold tuning)
 ppg_branch:
   filters: [16, 32, 64]
   kernel_size: 3

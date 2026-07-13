@@ -1,0 +1,15 @@
+{
+  "auroc": 0.11850000000000001,
+  "brier": 0.681591658149623,
+  "accuracy": 0.3,
+  "precision": 0.43820224719101125,
+  "recall": 0.4875,
+  "f1": 0.46153846153846156,
+  "n_total": 130,
+  "n_healthy": 50,
+  "n_at_risk": 80,
+  "true_negatives": 0,
+  "false_positives": 50,
+  "false_negatives": 41,
+  "true_positives": 39
+}

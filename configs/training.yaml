@@ -1,5 +1,5 @@
-# Training configuration (v2)
-run_name: "cvd_risk_v2"
+# Training configuration (v3 — v2 baseline + alpha2 drop + threshold tuning)
+run_name: "cvd_risk_v3"
 
 # Data
 ppg_length: 7500
@@ -10,6 +10,8 @@ num_event_classes: 1
 # Losses
 focal_gamma: 2.0
 focal_alpha: 0.25
+asymmetric_loss: false            # keep v2 loss for now
+fn_weight: 1.5
 loss_weights:
   event_output: 1.0
   acuity_output: 0.3
@@ -30,6 +32,9 @@ warmup_epochs: 3
 # Regularisation
 dropout: 0.3
 batch_norm: true
+
+# Data augmentation — disabled to match v2
+augment_ppg: false
 
 # Training loop
 epochs: 100
