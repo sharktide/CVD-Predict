@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Compare v4, v5-watch, and v6-watch on the same 130 synthetic Apple Watch test signals.
+Compare v4, v5-watch, v6-watch, and v8-watch on 130 synthetic Apple Watch test signals.
 """
 
 import sys, os
@@ -17,17 +17,22 @@ from scripts.test_apple_watch_approx import AppleWatchPPGGenerator, extract_feat
 from src.model_watch import build_watch_model
 
 def load_v6_watch():
-    model_path = Path("production/cvd_risk_v6_watch/best_model.keras")
     config_path = Path("production/cvd_risk_v6_watch/config.yaml")
 
     import yaml
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    # Load using legacy H5 format
-    model = tf.keras.models.load_model(str(model_path))
     with open("production/cvd_risk_v6_watch/feature_columns.json") as f:
         feature_cols = json.load(f)
+
+    # Rebuild architecture and load weights only (Keras 3 .keras format incompatible with TF 2.15)
+    model = build_watch_model(
+        ppg_input_shape=(config["ppg_length"], 1),
+        feature_dim=len(feature_cols),
+    )
+    model.load_weights("production/cvd_risk_v6_watch/best_model.keras")
+
     with open("production/cvd_risk_v6_watch/optimal_threshold.json") as f:
         threshold = json.load(f)["threshold"]
 
@@ -83,7 +88,15 @@ def main():
     with open("production/cvd_risk_v5_watch/optimal_threshold.json") as f:
         v5_threshold = json.load(f)["threshold"]
 
-    v4_probs, v5_probs, v6_probs = [], [], []
+    # v8 model — rebuild from architecture + weights (same format as v6)
+    with open("production/cvd_risk_v8_watch/feature_columns.json") as f:
+        v8_feature_cols = json.load(f)
+    with open("production/cvd_risk_v8_watch/optimal_threshold.json") as f:
+        v8_threshold = json.load(f)["threshold"]
+    v8_model = build_watch_model(ppg_input_shape=(7500, 1), feature_dim=len(v8_feature_cols))
+    v8_model.load_weights("production/cvd_risk_v8_watch/best_model.keras")
+
+    v4_probs, v5_probs, v6_probs, v8_probs = [], [], [], []
 
     print("Running inference on 130 signals...")
     for i, ppg in enumerate(signals):
@@ -101,18 +114,24 @@ def main():
         v6_prob = predict_v6(v6_model, v6_feature_cols, v6_threshold, ppg, feat)
         v6_probs.append(v6_prob)
 
+        # v8
+        v8_prob = predict_v6(v8_model, v8_feature_cols, v8_threshold, ppg, feat)
+        v8_probs.append(v8_prob)
+
         if (i + 1) % 20 == 0:
             print(f"  {i+1}/130 done")
 
     v4_probs = np.array(v4_probs)
     v5_probs = np.array(v5_probs)
     v6_probs = np.array(v6_probs)
+    v8_probs = np.array(v8_probs)
 
     results = []
     for name, probs, threshold in [
         ("v4 (raw)", v4_probs, 0.05),
         ("v5-watch (inverted)", v5_probs, 0.55),
         ("v6-watch (native)", v6_probs, v6_threshold),
+        ("v8-watch (patient-level)", v8_probs, v8_threshold),
     ]:
         preds = (probs >= threshold).astype(int)
         try:

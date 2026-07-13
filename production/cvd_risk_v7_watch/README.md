@@ -1,5 +1,7 @@
 # CVD Risk Model v7-watch
 
+> **⚠ DATA LEAKAGE WARNING:** v7-watch has **signal-level data leakage** — the train/test split was done at the signal level, not the patient level. Since each patient contributes multiple signals, 47 of 59 patients appear in both the training and held-out test sets. The 100% metrics below are **inflated and unreliable**. Use **v8-watch** instead, which uses proper patient-level splits. The v7 model files are preserved as-is per project policy.
+
 ## Overview
 
 v7-watch is a **hybrid-trained** CVD risk prediction model for Apple Watch wrist PPG. It combines **real clinical data** (MIMIC-IV ICU + MMASH wearable) with synthetic Apple Watch PPG augmentation, achieving **100% accuracy, precision, and recall** on the held-out test set.
@@ -109,12 +111,15 @@ Logs include:
 
 ## Comparison with Other Models
 
-| Model | Data | AUROC | Accuracy | Precision | Recall | F1 |
-|-------|------|-------|----------|-----------|--------|----|
-| v4 (ICU) | MIMIC only | 0.119 | 30.0% | 43.8% | 48.8% | 0.462 |
-| v5-watch (inverted) | v4 wrapper | 0.882 | 82.3% | 100.0% | 71.2% | 0.832 |
-| v6-watch (synthetic) | Synthetic only | 0.977 | 96.2% | 98.7% | 95.0% | 0.968 |
-| **v7-watch (hybrid)** | **Real + Synthetic** | **1.000** | **100.0%** | **100.0%** | **100.0%** | **1.000** |
+| Model | Data | Split | AUROC | Accuracy | Precision | Recall | F1 |
+|-------|------|-------|-------|----------|-----------|--------|----|
+| v4 (ICU) | MIMIC only | signal | 0.119 | 30.0% | 43.8% | 48.8% | 0.462 |
+| v5-watch (inverted) | v4 wrapper | signal | 0.882 | 82.3% | 100.0% | 71.2% | 0.832 |
+| v6-watch (synthetic) | Synthetic only | signal | 0.977 | 96.2% | 98.7% | 95.0% | 0.968 |
+| **v7-watch (hybrid)** | **Real + Synthetic** | **signal ⚠️** | **1.000** | **100.0%** | **100.0%** | **100.0%** | **1.000** |
+| **v8-watch (honest)** | **Real + Synthetic** | **patient** | **1.000** | **96.4%** | **100.0%** | **93.3%** | **0.966** |
+
+> v7's perfect scores are due to data leakage. v8 uses patient-level splits with zero patient overlap — its scores represent true generalization performance.
 
 ## Limitations
 
