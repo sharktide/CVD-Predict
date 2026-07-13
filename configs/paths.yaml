@@ -1,0 +1,5 @@
+raw_data_dir: "data/raw"
+processed_data_dir: "data/processed"
+interim_data_dir: "data/interim"
+models_dir: "models"
+logs_dir: "logs"

@@ -1,0 +1,26 @@
+# Evaluation and calibration configuration
+run_name: "cvd_risk_v1"
+
+# Core metrics
+event_horizons_hours: [1, 14, 24]
+n_bins_calibration: 10
+
+# Calibration
+calibration_method: "isotonic"   # isotonic | platt
+apply_calibration: true
+
+# Subgroup analysis
+subgroup_columns:
+  - "icu_type"
+  - "community_likeness_bin"
+  - "label_confidence_bin"
+  - "device_domain"
+
+# Thresholds
+sensitivity_target: 0.90
+threshold_tune_split: "val"
+
+# Export
+export_tflite: true
+export_onnx: true
+model_version: "v1"

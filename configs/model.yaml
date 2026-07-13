@@ -1,0 +1,30 @@
+# Model architecture configuration (v2 — reduced to ~100K params)
+ppg_branch:
+  filters: [16, 32, 64]
+  kernel_size: 3
+  pooling_size: 2
+  temporal_type: "bilstm"
+  temporal_units: 32
+  dense_units: 64
+
+feature_branch:
+  dense_layers: [32, 32]
+  dropout: 0.3
+
+shared:
+  units: 64
+  dropout: 0.3
+
+event_head:
+  hidden_units: 32
+  dropout: 0.3
+
+acuity_head:
+  hidden_units: 32
+  dropout: 0.2
+
+domain:
+  lambda: 1.0
+  icu_domain_hidden: 16
+  device_domain_hidden: 16
+  sensor_quality_hidden: 16

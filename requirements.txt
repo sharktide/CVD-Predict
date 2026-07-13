@@ -10,16 +10,18 @@ tensorflow>=2.21
 # PhysioNet waveform I/O
 wfdb>=4.1
 
-# Biosignal processing (optional but recommended for beat detection)
+# Biosignal processing (recommended for beat detection and HRV)
 neurokit2>=0.2.5
-# biosppy>=2.0
-# heartpy>=2.7
 
 # HTTP downloads
 requests>=2.31
 
-# CoreML export (macOS only, optional)
-# coremltools>=7.0
+# ONNX export
+tf2onnx>=1.16
 
 # Logging / notebooks
 tensorboard>=2.14
+matplotlib>=3.7
+
+# CoreML export (macOS only, optional)
+# coremltools>=7.0
