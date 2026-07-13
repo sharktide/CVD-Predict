@@ -1,0 +1,67 @@
+version: v6-watch
+description: CVD risk model trained specifically for Apple Watch wrist PPG
+ppg_length: 7500
+sampling_rate_hz: 25
+feature_columns:
+- HRV_CSI
+- HRV_CVNN
+- HRV_CVSD
+- HRV_DFA_alpha1
+- HRV_HF
+- HRV_HFn
+- HRV_IQRNN
+- HRV_LF
+- HRV_LFHF
+- HRV_LFn
+- HRV_LnHF
+- HRV_MCVNN
+- HRV_MadNN
+- HRV_MaxNN
+- HRV_MeanNN
+- HRV_MedianNN
+- HRV_MinNN
+- HRV_Prc20NN
+- HRV_Prc80NN
+- HRV_RMSSD
+- HRV_SD1
+- HRV_SD1SD2
+- HRV_SD2
+- HRV_SDNN
+- HRV_SDSD
+- HRV_TP
+- HRV_pNN20
+- HRV_pNN50
+- base_hr
+- mean_amplitude
+- pulse_rate
+- signal_length
+- sqi
+- std_amplitude
+architecture:
+  ppg_branch: "ResNet 1D-CNN (16\u219232\u219264) + BiLSTM(32)"
+  feature_branch: MLP (32, 32)
+  shared: Dense(32)
+  event_head: "Dense(16) \u2192 Dense(1, sigmoid)"
+  total_params: 63697
+training:
+  dataset: synthetic_apple_watch
+  n_samples: 1200
+  n_healthy: 500
+  n_event: 700
+  split: 70/15/15
+  optimizer: AdamW
+  lr: 0.0003
+  batch_size: 32
+performance:
+  auroc: 0.9983552631578947
+  accuracy: 0.9611111111111111
+  precision: 1.0
+  recall: 0.9326923076923077
+  f1: 0.9651741293532339
+  brier: 0.046670727868735815
+  threshold: 0.11
+  n_test: 180
+  tn: 76
+  fp: 0
+  fn: 7
+  tp: 97
