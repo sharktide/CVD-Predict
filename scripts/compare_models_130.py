@@ -112,7 +112,15 @@ def main():
     v10_model = build_watch_model(ppg_input_shape=(7500, 1), feature_dim=len(v10_feature_cols))
     v10_model.load_weights("production/cvd_risk_v10_watch/best_model.keras")
 
-    v4_probs, v5_probs, v6_probs, v8_probs, v9_probs, v10_probs = [], [], [], [], [], []
+    # v11 model (ultra-realistic synthetic watch training)
+    with open("production/cvd_risk_v11_watch/feature_columns.json") as f:
+        v11_feature_cols = json.load(f)
+    with open("production/cvd_risk_v11_watch/optimal_threshold.json") as f:
+        v11_threshold = json.load(f)["threshold"]
+    v11_model = build_watch_model(ppg_input_shape=(7500, 1), feature_dim=len(v11_feature_cols))
+    v11_model.load_weights("production/cvd_risk_v11_watch/best_model.keras")
+
+    v4_probs, v5_probs, v6_probs, v8_probs, v9_probs, v10_probs, v11_probs = [], [], [], [], [], [], []
 
     print("Running inference on 130 signals...")
     for i, ppg in enumerate(signals):
@@ -142,6 +150,10 @@ def main():
         v10_prob = predict_v6(v10_model, v10_feature_cols, v10_threshold, ppg, feat)
         v10_probs.append(v10_prob)
 
+        # v11
+        v11_prob = predict_v6(v11_model, v11_feature_cols, v11_threshold, ppg, feat)
+        v11_probs.append(v11_prob)
+
         if (i + 1) % 20 == 0:
             print(f"  {i+1}/130 done")
 
@@ -151,6 +163,7 @@ def main():
     v8_probs = np.array(v8_probs)
     v9_probs = np.array(v9_probs)
     v10_probs = np.array(v10_probs)
+    v11_probs = np.array(v11_probs)
 
     results = []
     for name, probs, threshold in [
@@ -160,6 +173,7 @@ def main():
         ("v8-watch (patient-level)", v8_probs, v8_threshold),
         ("v9-watch (physics-informed)", v9_probs, v9_threshold),
         ("v10-watch (realistic-synthetic)", v10_probs, v10_threshold),
+        ("v11-watch (ultra-realistic)", v11_probs, v11_threshold),
     ]:
         preds = (probs >= threshold).astype(int)
         try:

@@ -5,3 +5,4 @@ v6-watch (native),0.997,95.4%,93.0%,100.0%,0.964,0.11
 v8-watch (patient-level),0.912,86.2%,100.0%,77.5%,0.873,0.05
 v9-watch (physics-informed),0.919,84.6%,92.9%,81.2%,0.867,0.05
 v10-watch (realistic-synthetic),0.987,93.1%,100.0%,88.8%,0.940,0.05
+v11-watch (ultra-realistic),0.948,61.5%,61.5%,100.0%,0.762,0.05
