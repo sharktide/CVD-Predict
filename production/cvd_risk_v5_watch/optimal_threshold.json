@@ -1,1 +1,0 @@
-{"threshold": 0.55, "base_threshold": 0.05, "inverted": true, "base_model": "cvd_risk_v4", "notes": "Inverted v4 for Apple Watch. threshold=0.55 gives 100% precision (zero false positives). For higher recall, use 0.35 (F1=0.87)."}
