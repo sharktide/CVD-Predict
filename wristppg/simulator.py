@@ -1,26 +1,22 @@
 """
-WristPPGSimulator: orchestrates the full pipeline
+WristPPGSimulator: orchestrates the full pipeline.
 
-    LV pressure -> aortic flow -> Windkessel -> arterial tree propagation
-    -> PTT -> radial waveform -> microvascular bed -> optical tissue model
-    -> photodiode -> ADC output
+Updated to wire together all new modules:
+- Wrist anatomy (optics.WristAnatomy)
+- Ambient light contamination (optics ambient_light_fraction)
+- Skin temperature effects (optics, microvasculature)
+- Closed-loop autonomic (autonomic.AutonomicSimulator with baroreflex)
+- Cardiac arrest physiology (disease profiles with ischemia/SPO2/temp)
+- Wrist-specific microvasculature (ischemia, reperfusion, venous pooling)
+- Realistic motion (3-axis gravity, posture, strap dynamics)
+- Wrist contact (ambient leakage, strap type, cardiac arrest recovery)
 
-beat-by-beat, driven by continuously evolving autonomic/systemic state and
-a rhythm generator, then passes the resulting "clean" optical signal
-through contact, motion, noise, and sensor-acquisition models.
-
-This module is the integration layer; see the evidence-base docstrings in
-each component module (cardiac.py, windkessel.py, arterial_tree.py,
-autonomic.py, arrhythmia.py, optics.py, microvasculature.py, motion.py,
-contact.py, noise.py, sensor_pipeline.py, disease.py) for citations and
-explicit heuristic/assumption disclosures. Nothing here should be
-interpreted as validated against a specific real device or clinical
-population without the comparisons described in validation.py.
+See evidence-base docstrings in each component module.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
@@ -30,7 +26,7 @@ from .windkessel import WindkesselModel, params_from_physiology
 from .arterial_tree import ArterialTreeModel, ArterialTreeParams
 from .autonomic import AutonomicSimulator
 from .arrhythmia import RhythmGenerator, ArrhythmiaConfig
-from .optics import SkinOpticalModel, SkinOpticalParams
+from .optics import SkinOpticalModel, SkinOpticalParams, WristAnatomy
 from .microvasculature import MicrovascularBedModel
 from .motion import MotionArtifactModel, MotionEvent, ACTIVITY_PROFILES
 from .contact import ContactModel, ContactState
@@ -99,14 +95,7 @@ class WristPPGSimulator:
             or a DiseaseProfile instance.
         latent_overrides:
             Optional dict to directly override any sampled latent
-            physiological variable (hr_bpm, age_years, stiffness,
-            resistance, contractility, hrv_frac, rhythm, vascular_tone,
-            preload_bias, melanin_fraction). Use this to decouple
-            observable features (e.g. heart rate) from the disease label
-            when constructing ML training sets, per the "avoid shortcut
-            learning" requirement — e.g. force a "healthy" profile to a
-            high HR, or an "hfref" profile to a normal HR, so that a
-            classifier cannot key on HR alone.
+            physiological variable.
         """
         prof = PROFILES[profile] if isinstance(profile, str) else profile
         latent = prof.sample(self.rng)
@@ -117,6 +106,33 @@ class WristPPGSimulator:
 
         exercise_profile = exercise_profile or ("exercise" if activity in ("running", "lifting_weights") else "rest")
 
+        # --- Wrist anatomy ---
+        wrist_anatomy = WristAnatomy(
+            radial_artery_depth_mm=self.rng.uniform(1.0, 3.0),
+            subcutaneous_fat_mm=self.rng.uniform(2.0, 8.0),
+            source_detector_distance_mm=self.rng.uniform(3.0, 7.0),
+        )
+
+        # --- Determine ambient light from contact_mode ---
+        ambient_light = 0.0
+        if contact_mode in ("loose", "rolling"):
+            ambient_light = self.rng.uniform(0.1, 0.4)
+        elif contact_mode == "partial_lift":
+            ambient_light = self.rng.uniform(0.3, 0.7)
+
+        # --- Skin temperature ---
+        # Core 36.5, wrist 2-5C cooler depending on environment
+        skin_temp = 36.5 - self.rng.uniform(2.0, 5.0)
+
+        # --- Determine cardiac arrest state for microvasculature ---
+        is_cardiac_arrest = latent.get("rhythm") in ("vf", "asystole", "agonal")
+        arrest_start_s = self.rng.uniform(5.0, duration_s - 10.0) if is_cardiac_arrest else None
+
+        # --- Determine ischemia parameters ---
+        # SpO2 from disease profile
+        target_spo2 = latent.get("spo2", 0.98)
+
+        # --- Autonomic simulation ---
         auto_state = self.autonomic.simulate(
             duration_s=duration_s + 5.0,
             base_hr_bpm=latent["hr_bpm"],
@@ -125,55 +141,81 @@ class WristPPGSimulator:
             circadian_hour=circadian_hour,
             orthostatic_event_s=orthostatic_event_s,
             exercise_profile=exercise_profile,
+            hrv_frac=latent.get("hrv_frac", 0.5),
+            map_setpoint_mmHg=latent.get("map_setpoint_mmHg", 93.0),
         )
 
+        # --- Rhythm generation ---
         rhythm_cfg = ArrhythmiaConfig(rhythm=latent["rhythm"], base_hr_bpm=latent["hr_bpm"],
                                        duration_s=duration_s + 5.0, rng=self.rng)
         beats = self.rhythm_gen.generate(rhythm_cfg)
 
+        # --- Beat-by-beat simulation ---
         beat_times, beat_records, blood_fraction_segments, seg_times = self._simulate_beats(
-            beats, auto_state, latent, prof
+            beats, auto_state, latent, prof, wrist_anatomy
         )
 
+        # --- Assemble continuous blood fraction ---
         n_internal = int(duration_s * FS_INTERNAL_HZ)
         t_internal = np.arange(n_internal) / FS_INTERNAL_HZ
-        blood_fraction_full = self._assemble_continuous(seg_times, blood_fraction_segments,
-                                                          t_internal, fill_value=latent.get(
-                                                              "tissue_blood_fraction", 0.02))
+        blood_fraction_full = self._assemble_continuous(
+            seg_times, blood_fraction_segments, t_internal,
+            fill_value=latent.get("tissue_blood_fraction", 0.02)
+        )
 
+        # --- Optical model with wrist anatomy and ambient light ---
         skin_params = SkinOpticalParams(
             melanin_fraction=latent["melanin_fraction"],
-            spo2=0.98, venous_spo2=0.70,
-            tissue_blood_fraction=0.02, pulsatile_fraction=0.006,
+            spo2=target_spo2,
+            venous_spo2=0.70,
+            tissue_blood_fraction=latent.get("tissue_blood_fraction", 0.025),
+            pulsatile_fraction=latent.get("pulsatile_fraction", 0.008),
             hair_density=self.rng.uniform(0.0, 0.3),
             tattoo_optical_density=0.0,
-            sweat_layer=0.0,
+            sweat_layer=0.0 if activity == "rest" else self.rng.uniform(0.0, 0.3),
             contact_pressure=0.5,
+            body_temp_c=latent.get("body_temp_c", 36.5),
+            wrist_anatomy=wrist_anatomy,
+            ambient_light_fraction=ambient_light,
+            skin_temperature_c=skin_temp,
         )
-        optics_out = self.optics.generate_ppg_from_blood_volume(wavelength, skin_params, blood_fraction_full)
+        optics_out = self.optics.generate_ppg_from_blood_volume(
+            wavelength, skin_params, blood_fraction_full
+        )
         clean_optical = optics_out["intensity"]
 
-        contact_state = ContactState(mode=contact_mode)
+        # --- Motion model (3-axis accelerometer) ---
         motion_event = MotionEvent(activity=activity, intensity_scale=1.0)
         accel = self.motion_model.accelerometer_signal(n_internal, motion_event)
-        contact_out = self.contact_model.coupling_trace(n_internal, contact_state, motion_energy=accel)
 
-        ambient_component = self.rng.normal(np.mean(clean_optical), 0.02 * np.std(clean_optical) + 1e-6, n_internal)
-        coupled = clean_optical * contact_out["efficiency"] + (1 - contact_out["efficiency"]) * ambient_component
+        # --- Contact model (wrist-specific with ambient leakage) ---
+        contact_state = ContactState(mode=contact_mode, posture="upright")
+        contact_out = self.contact_model.coupling_trace(
+            n_internal, contact_state, motion_energy=np.linalg.norm(accel, axis=1)
+        )
 
+        # --- Apply contact coupling with ambient light leakage ---
+        # Ambient light is additive, not multiplicative
+        ambient_level = float(np.mean(clean_optical)) * contact_out["ambient_leakage"]
+        coupled = clean_optical * contact_out["efficiency"] + ambient_level
+
+        # --- Apply motion artifacts ---
         motion_out = self.motion_model.couple_to_ppg(coupled, accel, motion_event)
         motioned = motion_out["ppg_with_motion"]
 
+        # --- Add electronic/sensor noise ---
         noise_params = NoiseParams()
-        noisy = self.noise_model.apply(motioned, FS_INTERNAL_HZ, noise_params,
-                                        melanin_fraction=latent["melanin_fraction"], device_age_days=0.0)
+        noisy = self.noise_model.apply(
+            motioned, FS_INTERNAL_HZ, noise_params,
+            melanin_fraction=latent["melanin_fraction"], device_age_days=0.0
+        )
 
+        # --- Sensor pipeline (demodulation, filtering, downsampling) ---
         sensor_out = self.sensor_pipeline.run(noisy, FS_INTERNAL_HZ)
         final_ppg = sensor_out["raw_sensor_output"]
 
-        # Resample accel to match output PPG length (3-axis)
+        # --- Resample accel to output rate ---
         n_out = len(final_ppg)
-        t_internal = np.arange(n_internal) / FS_INTERNAL_HZ
         t_out = np.linspace(0, t_internal[-1], n_out)
         accel_resampled = np.zeros((n_out, 3), dtype=np.float32)
         for axis in range(3):
@@ -188,6 +230,15 @@ class WristPPGSimulator:
             "estimated_snr_db_after_motion": motion_out["estimated_snr_db"],
             "seed": self.seed,
             "notes": prof.notes,
+            "wrist_anatomy": {
+                "radial_artery_depth_mm": wrist_anatomy.radial_artery_depth_mm,
+                "subcutaneous_fat_mm": wrist_anatomy.subcutaneous_fat_mm,
+                "source_detector_distance_mm": wrist_anatomy.source_detector_distance_mm,
+            },
+            "ambient_light_fraction": ambient_light,
+            "skin_temperature_c": skin_temp,
+            "spo2": target_spo2,
+            "body_temp_c": latent.get("body_temp_c", 36.5),
         }
 
         return SimulationResult(
@@ -210,7 +261,9 @@ class WristPPGSimulator:
         )
 
     # ------------------------------------------------------------------
-    def _simulate_beats(self, beats, auto_state, latent, prof: DiseaseProfile):
+    def _simulate_beats(self, beats, auto_state, latent, prof: DiseaseProfile,
+                         wrist_anatomy: WristAnatomy):
+        """Simulate beat-by-beat hemodynamics with wrist-specific parameters."""
         t_cursor = 0.0
         prev_ea = 1.1
         prev_p_end = 80.0
@@ -218,13 +271,19 @@ class WristPPGSimulator:
         blood_fraction_segments = []
         seg_times = []
 
+        # Compute baseline microvascular integrity from MAP
+        map_target = latent.get("map_target_mmHg", 85.0)
+        micro_integrity = self.microvasc.compute_microvascular_integrity(map_target)
+
+        # Wrist-specific baseline (higher than finger due to shallow artery)
+        baseline_bf = 0.025 * (1.0 + 0.5 * (1.0 - wrist_anatomy.subcutaneous_fat_mm / 8.0))
+
         for beat in beats:
             local_hr = float(self.autonomic.interp_at(auto_state, np.array([t_cursor]), "hr_bpm")[0])
             local_resistance = float(self.autonomic.interp_at(auto_state, np.array([t_cursor]), "peripheral_resistance")[0])
             local_tone = float(self.autonomic.interp_at(auto_state, np.array([t_cursor]), "vascular_tone")[0])
             local_preload = float(self.autonomic.interp_at(auto_state, np.array([t_cursor]), "preload_state")[0])
 
-            # combine rhythm-driven RR with autonomic HR modulation
             autonomic_scale = latent["hr_bpm"] / max(local_hr, 1e-3)
             rr = beat.rr_s * autonomic_scale
             rr = float(np.clip(rr, 0.18, 3.5))
@@ -255,15 +314,34 @@ class WristPPGSimulator:
             at_params = ArterialTreeParams(
                 pwv0_m_s=4.0,
                 age_years=latent["age_years"],
-                reflection_coefficient=float(np.clip(0.25 + 0.20 * (latent["stiffness"] - 1.0)
-                                                       + 0.15 * (latent["resistance"] - 1.0), 0.05, 0.85)),
+                reflection_coefficient=float(np.clip(
+                    0.25 + 0.20 * (latent["stiffness"] - 1.0) + 0.15 * (latent["resistance"] - 1.0),
+                    0.05, 0.85
+                )),
             )
-            tree = self.arterial_tree.propagate(wk["P_aortic_mmHg"], dt, latent["stiffness"],
-                                                 latent["age_years"], wk["mean_pressure_mmHg"], at_params)
+            tree = self.arterial_tree.propagate(
+                wk["P_aortic_mmHg"], dt, latent["stiffness"],
+                latent["age_years"], wk["mean_pressure_mmHg"], at_params
+            )
+
+            # Compute ischemia state for this beat
+            is_arrhythmic = beat.beat_type in ("non_perfusion", "vf", "asystole", "agonal")
+            ischemia_state = np.ones(n_samples) * (0.8 if is_arrhythmic else 0.0)
+            ischemia_dur = np.ones(n_samples) * (t_cursor if is_arrhythmic else 0.0)
+
+            # Venous pooling from posture
+            posture = "upright"
+            venous_pooling = self.microvasc.compute_venous_pooling(posture, t_cursor)
 
             blood_fraction = self.microvasc.pressure_to_blood_fraction(
-                tree["radial_pressure_mmHg"], baseline_fraction=0.02,
-                vascular_tone=local_tone, compliance_scale=1.0 / max(latent["stiffness"], 0.2),
+                tree["radial_pressure_mmHg"],
+                baseline_fraction=baseline_bf,
+                vascular_tone=local_tone,
+                compliance_scale=1.0 / max(latent["stiffness"], 0.2),
+                ischemia_state=ischemia_state,
+                ischemia_duration_s=ischemia_dur,
+                venous_pooling_fraction=venous_pooling,
+                microvascular_integrity=micro_integrity,
             )
 
             t_axis = t_cursor + np.arange(n_samples) * dt

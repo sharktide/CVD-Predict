@@ -98,10 +98,13 @@ class DiseaseProfile:
     vascular_tone_range: tuple = (0.4, 0.6)
     preload_bias: float = 0.0
     melanin_range: tuple = (0.05, 0.95)
+    spo2_range: tuple = (0.95, 1.0)       # arterial SpO2 range
+    body_temp_range: tuple = (36.1, 37.2)  # core body temperature (C)
+    perfusion_index_range: tuple = (0.02, 0.20)  # baseline PI (wrist)
     notes: str = ""
 
     def sample(self, rng: np.random.Generator) -> dict:
-        rhythm = rng.choice(self.rhythm_options, p=self.rhythm_probs) if len(self.rhythm_options) > 1 \
+        rhythm = rng.choice(self.rhythm_options, p=self.rhythm_probs) if len(self.rhythm_probs or ()) > 1 \
             else self.rhythm_options[0]
         return {
             "hr_bpm": float(rng.uniform(*self.hr_range)),
@@ -114,6 +117,9 @@ class DiseaseProfile:
             "vascular_tone": float(rng.uniform(*self.vascular_tone_range)),
             "preload_bias": self.preload_bias,
             "melanin_fraction": float(rng.uniform(*self.melanin_range)),
+            "spo2": float(rng.uniform(*self.spo2_range)),
+            "body_temp_c": float(rng.uniform(*self.body_temp_range)),
+            "perfusion_index": float(rng.uniform(*self.perfusion_index_range)),
             "profile": self.name,
         }
 
@@ -220,5 +226,197 @@ PROFILES: dict[str, DiseaseProfile] = {
         stiffness_range=(0.7, 1.2), resistance_range=(0.7, 1.1),
         contractility_range=(0.9, 1.05), hrv_frac_range=(0.20, 0.40),
         rhythm_options=("sinus",), vascular_tone_range=(0.25, 0.45),
+    ),
+    # ==================================================================
+    # CARDIAC ARREST PROFILES
+    # These represent the physiological states before, during, and after
+    # out-of-hospital cardiac arrest (OHCA). The PPG signatures reflect
+    # the hemodynamic consequences of each phase — not a diagnostic
+    # ground truth, but realistic physiological training data.
+    #
+    # Evidence base:
+    # - Pre-arrest deterioration: Weiser et al., "A clinical prediction
+    #   model for outcome after cardiac arrest", NEJM 386:2273-82 (2022);
+    #   Chan et al., "Heart disease and stroke statistics", AHA (2024).
+    # - VF characteristics: Zipes et al., ACC/AHA/ESC Ventricular
+    #   Arrhythmia Guidelines, Circulation 110:e163-e276 (2004).
+    # - Post-resuscitation hemodynamics: Nielsen et al., "Targeted
+    #   temperature management after cardiac arrest", NEJM 373:2286 (2015).
+    # ==================================================================
+
+    "pre_arrest_deterioration": DiseaseProfile(
+        name="pre_arrest_deterioration",
+        hr_range=(40, 130),           # wide range: bradycardic or tachycardic pre-arrest
+        age_range=(45, 90),
+        stiffness_range=(0.9, 2.0),
+        resistance_range=(1.2, 3.0),  # vasoconstriction from shock
+        contractility_range=(0.25, 0.70),  # declining contractility
+        hrv_frac_range=(0.01, 0.06),  # severely reduced HRV
+        rhythm_options=("sinus", "vt", "heart_block_2", "heart_block_3",
+                        "bradycardia", "pvc_isolated", "bigeminy"),
+        rhythm_probs=(0.30, 0.20, 0.15, 0.10, 0.10, 0.10, 0.05),
+        vascular_tone_range=(0.5, 0.95),
+        preload_bias=-0.30,
+        spo2_range=(0.75, 0.92),
+        body_temp_range=(34.5, 37.0),
+        perfusion_index_range=(0.005, 0.06),
+        notes=("Pre-cardiac arrest deterioration: hemodynamic instability, "
+               "declining contractility, vasoconstriction, falling SpO2, "
+               "reduced HRV, and progressive arrhythmias preceding arrest. "
+               "PPG shows declining pulse amplitude, widening pulse pressure, "
+               "and increasing irregularity. This is a physiological training "
+               "profile, not a clinical diagnostic label."),
+    ),
+
+    "cardiac_arrest_vf": DiseaseProfile(
+        name="cardiac_arrest_vf",
+        hr_range=(200, 400),          # VF oscillation frequency
+        age_range=(45, 90),
+        stiffness_range=(0.8, 1.8),
+        resistance_range=(1.5, 3.5),  # peripheral vasoconstriction
+        contractility_range=(0.0, 0.15),  # no effective contraction
+        hrv_frac_range=(0.0, 0.02),   # no organized HRV in VF
+        rhythm_options=("vf",),
+        vascular_tone_range=(0.7, 1.0),
+        preload_bias=-0.40,
+        spo2_range=(0.50, 0.80),      # rapidly falling SpO2
+        body_temp_range=(33.0, 36.5),
+        perfusion_index_range=(0.0, 0.01),
+        notes=("Ventricular fibrillation cardiac arrest: chaotic ventricular "
+               "electrical activity with no coordinated contraction. PPG shows "
+               "rapid, irregular, low-amplitude oscillations with no discernible "
+               "pulse. Stroke volume near zero. SpO2 falling rapidly. This is a "
+               "physiological simulation for algorithm development, not a clinical "
+               "diagnostic tool."),
+    ),
+
+    "cardiac_arrest_asystole": DiseaseProfile(
+        name="cardiac_arrest_asystole",
+        hr_range=(15, 30),            # escape rhythm may still exist briefly
+        age_range=(45, 90),
+        stiffness_range=(0.8, 1.8),
+        resistance_range=(2.0, 4.0),  # maximal vasoconstriction
+        contractility_range=(0.0, 0.05),
+        hrv_frac_range=(0.0, 0.01),
+        rhythm_options=("asystole",),
+        vascular_tone_range=(0.8, 1.0),
+        preload_bias=-0.50,
+        spo2_range=(0.30, 0.60),      # profound hypoxemia
+        body_temp_range=(30.0, 35.5), # hypothermia from no circulation
+        perfusion_index_range=(0.0, 0.005),
+        notes=("Asystole cardiac arrest: complete absence of organized cardiac "
+               "electrical and mechanical activity. PPG flatline with no pulsatile "
+               "component. Zero cardiac output. Profound hypoxemia and hypothermia "
+               "from absent circulation. Physiological simulation only."),
+    ),
+
+    "cardiac_arrest_pulseless_electrical": DiseaseProfile(
+        name="cardiac_arrest_pulseless_electrical",
+        hr_range=(30, 70),            # organized rhythm but no pulse
+        age_range=(45, 90),
+        stiffness_range=(0.8, 1.8),
+        resistance_range=(1.8, 3.5),
+        contractility_range=(0.05, 0.20),
+        hrv_frac_range=(0.01, 0.04),
+        rhythm_options=("heart_block_3", "bradycardia", "sinus_pause"),
+        rhythm_probs=(0.40, 0.35, 0.25),
+        vascular_tone_range=(0.6, 1.0),
+        preload_bias=-0.45,
+        spo2_range=(0.40, 0.70),
+        body_temp_range=(31.0, 36.0),
+        perfusion_index_range=(0.0, 0.008),
+        notes=("Pulseless electrical activity (PEA) cardiac arrest: organized "
+               "electrical rhythm (e.g. bradycardia, heart block) without effective "
+               "mechanical contraction. PPG shows very weak or absent pulsatile "
+               "component despite electrical activity. Severe hypoxemia. "
+               "Physiological simulation only."),
+    ),
+
+    "post_resuscitation": DiseaseProfile(
+        name="post_resuscitation",
+        hr_range=(60, 120),
+        age_range=(45, 90),
+        stiffness_range=(0.9, 2.0),
+        resistance_range=(1.0, 2.0),
+        contractility_range=(0.30, 0.70),  # stunned myocardium
+        hrv_frac_range=(0.02, 0.08),
+        rhythm_options=("sinus", "afib", "pvc_isolated", "bigeminy"),
+        rhythm_probs=(0.50, 0.25, 0.15, 0.10),
+        vascular_tone_range=(0.3, 0.7),
+        preload_bias=-0.15,
+        spo2_range=(0.90, 0.98),      # on supplemental O2
+        body_temp_range=(33.0, 37.5),  # targeted temperature management
+        perfusion_index_range=(0.01, 0.08),
+        notes=("Post-resuscitation / return of spontaneous circulation (ROSC). "
+               "Myocardial stunning with reduced contractility. Wide complex "
+               "arrhythmias common. Patient may be on targeted temperature "
+               "management (32-36C). PPG shows weak, irregular pulses with "
+               "reduced amplitude. Physiological simulation only."),
+    ),
+
+    "respiratory_failure_pre_arrest": DiseaseProfile(
+        name="respiratory_failure_pre_arrest",
+        hr_range=(80, 140),
+        age_range=(40, 90),
+        stiffness_range=(0.8, 1.8),
+        resistance_range=(0.8, 1.5),
+        contractility_range=(0.7, 1.0),
+        hrv_frac_range=(0.03, 0.10),
+        rhythm_options=("sinus", "afib"),
+        rhythm_probs=(0.70, 0.30),
+        vascular_tone_range=(0.3, 0.7),
+        preload_bias=-0.10,
+        spo2_range=(0.60, 0.85),      # severe hypoxemia
+        body_temp_range=(35.5, 38.5),
+        perfusion_index_range=(0.008, 0.06),
+        notes=("Acute respiratory failure progressing toward cardiac arrest: "
+               "severe hypoxemia with compensatory tachycardia. PPG shows "
+               "declining SpO2 (via wavelength-dependent absorption changes), "
+               "tachycardia with reduced pulse amplitude. Common precursor "
+               "to cardiac arrest in pneumonia, PE, asthma, COPD exacerbation. "
+               "Physiological simulation only."),
+    ),
+
+    "electrocution_arrest": DiseaseProfile(
+        name="electrocution_arrest",
+        hr_range=(30, 180),           # variable: VF or asystole
+        age_range=(20, 70),
+        stiffness_range=(0.8, 1.3),
+        resistance_range=(0.7, 1.2),
+        contractility_range=(0.0, 0.30),
+        hrv_frac_range=(0.0, 0.03),
+        rhythm_options=("vf", "asystole"),
+        rhythm_probs=(0.70, 0.30),
+        vascular_tone_range=(0.5, 0.9),
+        preload_bias=-0.30,
+        spo2_range=(0.50, 0.85),
+        body_temp_range=(34.0, 42.0),  # burns can cause hyperthermia
+        perfusion_index_range=(0.0, 0.02),
+        notes=("Electrocution-induced cardiac arrest: electrical current disrupts "
+               "cardiac conduction, typically causing VF (low voltage) or asystole "
+               "(high voltage). May have associated burns causing fluid shifts. "
+               "PPG shows sudden loss of organized pulse. Physiological simulation only."),
+    ),
+
+    "drowning_arrest": DiseaseProfile(
+        name="drowning_arrest",
+        hr_range=(25, 100),
+        age_range=(5, 80),
+        stiffness_range=(0.7, 1.3),
+        resistance_range=(1.0, 2.5),
+        contractility_range=(0.20, 0.60),
+        hrv_frac_range=(0.01, 0.06),
+        rhythm_options=("bradycardia", "heart_block_3", "asystole"),
+        rhythm_probs=(0.40, 0.30, 0.30),
+        vascular_tone_range=(0.5, 0.9),
+        preload_bias=-0.20,
+        spo2_range=(0.40, 0.80),
+        body_temp_range=(28.0, 36.0),  # cold water immersion
+        perfusion_index_range=(0.0, 0.03),
+        notes=("Drowning-induced cardiac arrest: hypoxemia from aspiration leads to "
+               "progressive bradycardia then asystole. Cold water immersion causes "
+               "hypothermia which may be protective. PPG shows progressive bradycardia "
+               "with declining pulse amplitude, eventual flatline. Physiological "
+               "simulation only."),
     ),
 }

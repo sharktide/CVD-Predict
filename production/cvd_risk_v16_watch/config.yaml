@@ -1,0 +1,66 @@
+version: v16
+description: Wrist-only cardiac arrest detection using wristppg v0.3.0 simulator
+ppg_length: 7500
+sampling_rate_hz: 25
+feature_columns:
+- base_hr
+- wppg_ambient_light
+- wppg_body_temp_c
+- wppg_frac_afib
+- wppg_frac_pvc
+- wppg_frac_sinus
+- wppg_latent_contractility
+- wppg_latent_resistance
+- wppg_latent_stiffness
+- wppg_latent_vascular_tone
+- wppg_mean_aix
+- wppg_mean_ef
+- wppg_mean_hr_beats
+- wppg_mean_ptt
+- wppg_mean_pwv
+- wppg_mean_sv
+- wppg_skin_temp_c
+- wppg_spo2
+- wppg_std_aix
+- wppg_std_ef
+- wppg_std_hr_beats
+- wppg_std_ptt
+- wppg_std_pwv
+- wppg_std_sv
+- wppg_wrist_artery_depth
+- wppg_wrist_fat_mm
+architecture:
+  ppg_branch: ResNet 1D-CNN (16->32->64) + BiLSTM(32)
+  accel_branch: ResNet 1D-CNN (16->32->64) + BiLSTM(16)
+  cross_attention: PPG queries accel (32-dim)
+  biodata_branch: MLP (32, 16)
+  feature_branch: MLP (32, 32)
+  shared: Dense(64)
+  event_head: Dense(32) -> Dense(1, sigmoid)
+  total_params: 122577
+training:
+  dataset: wristppg v0.3.0 synthetic ONLY (no real data)
+  synthetic_source: wristppg/ v0.3.0 (cardiac arrest overhaul)
+  synthetic_counts:
+    healthy: 346
+    arrest: 354
+  optimizer: AdamW
+  lr: 0.0003
+  batch_size: 32
+  epochs_trained: 23
+  class_weights:
+    0: 1.0115606936416186
+    1: 0.9887005649717514
+performance_test:
+  auroc: 0.9996413199426112
+  accuracy: 0.9866666666666667
+  precision: 0.9761904761904762
+  recall: 1.0
+  f1: 0.9879518072289156
+  brier: 0.1521884948015213
+  threshold: 0.5899999999999997
+  n_test: 150
+  tn: 66
+  fp: 2
+  fn: 0
+  tp: 82

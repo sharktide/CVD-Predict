@@ -81,6 +81,7 @@ class Beat:
 RHYTHM_TYPES = (
     "sinus", "afib", "pvc_isolated", "pac_isolated", "bigeminy", "trigeminy",
     "svt", "vt", "bradycardia", "heart_block_2", "heart_block_3", "sinus_pause",
+    "vf", "asystole", "agonal",
 )
 
 
@@ -284,4 +285,117 @@ class RhythmGenerator:
             else:
                 rr = base_rr * (1 + rng.normal(0, 0.02))
                 beats.append(Beat(rr_s=max(rr, 0.3), beat_type="sinus", label_rhythm="sinus_pause"))
+        return beats
+
+    def _gen_vf(self, cfg: ArrhythmiaConfig) -> List[Beat]:
+        """Ventricular fibrillation: chaotic, rapid, ineffective electrical
+        activity with no coordinated contraction. The ventricles quiver
+        instead of pumping, producing no meaningful stroke volume.
+
+        ECG/PPG characteristics: rapid, irregular, low-amplitude
+        oscillations; no discernible QRS complexes; no pulse.
+
+        References:
+        - Zipes et al., "ACC/AHA/ESC Guidelines for Management of
+          Ventricular Arrhythmias", Circulation 110:e163-e276 (2004).
+        -RICS: VF frequency content is typically 3-8 Hz initially,
+          degrading to <3 Hz over minutes as ATP stores deplete.
+        """
+        rng = cfg.rng
+        n = self._n_beats(cfg, cfg.base_hr_bpm)
+
+        # VF is characterized by chaotic, rapid, ineffective contractions
+        # No organized electrical activity -> no effective pumping
+        beats = []
+        for i in range(n):
+            # RR intervals are chaotic: rapid (200-400 bpm equivalent) with
+            # large, random variability mimicking chaotic VF oscillations
+            vf_rr = rng.uniform(0.15, 0.40)  # 150-400 bpm equivalent
+            # Stroke volume is near-zero: the ventricle quivers, doesn't pump
+            sv_scale = float(np.clip(rng.exponential(0.02), 0.0, 0.05))
+            # Contractility is meaningless in VF but we set it low
+            contractility_scale = 0.1
+            # No perfusion: VF produces no pulse
+            beats.append(Beat(
+                rr_s=vf_rr, beat_type="vf", sv_scale=sv_scale,
+                contractility_scale=contractility_scale,
+                perfusion_ok=False, label_rhythm="vf",
+            ))
+        return beats
+
+    def _gen_asystole(self, cfg: ArrhythmiaConfig) -> List[Beat]:
+        """Asystole (flatline): complete absence of ventricular electrical
+        activity. No cardiac output whatsoever.
+
+        ECG/PPG characteristics: no detectable electrical or mechanical
+        cardiac activity; PPG shows flatline with only baseline noise.
+
+        References:
+        - Morrison et al., "Part 3: Defibrillation", Circulation
+          122:S829-S861 (2010), AHA Guidelines.
+        - PPG asystole: flat or slowly drifting baseline with no
+          pulsatile component, consistent with zero cardiac output.
+        """
+        rng = cfg.rng
+        n = self._n_beats(cfg, cfg.base_hr_bpm)
+
+        beats = []
+        for i in range(n):
+            # Asystole: no beats at all. We model this as very long RR
+            # intervals (effectively infinite gap between "beats") with
+            # zero stroke volume. The downstream pipeline will see a
+            # flat blood-volume waveform.
+            beats.append(Beat(
+                rr_s=10.0,  # effectively infinite gap
+                beat_type="asystole", sv_scale=0.0,
+                contractility_scale=0.0,
+                perfusion_ok=False, label_rhythm="asystole",
+            ))
+        return beats
+
+    def _gen_agonal(self, cfg: ArrhythmiaConfig) -> List[Beat]:
+        """Agonal breathing pattern: the pre-terminal respiratory pattern
+        seen in cardiac arrest. Characterized by slow, gasping respirations
+        with progressively widening QRS and declining heart rate.
+
+        In PPG terms: progressively weakening pulses with increasing
+        irregularity and declining amplitude, interspersed with long
+        pauses (agonal gasps every 20-60 seconds).
+
+        References:
+        - Bobrow et al., "Chest compression-only CPR by lay rescuers
+          and survival after out-of-hospital cardiac arrest", JAMA
+          300:1423-1431 (2008) — agonal gasps occur in ~40% of witnessed
+          cardiac arrests.
+        - Roppolo et al., "Out-of-hospital cardiac arrest: a review of
+          agonal breathing", Resuscitation 82:1-7 (2011).
+        """
+        rng = cfg.rng
+        n = self._n_beats(cfg, cfg.base_hr_bpm)
+
+        beats = []
+        # Agonal rhythm: starts with slow, irregular beats that
+        # progressively deteriorate
+        current_hr = max(cfg.base_hr_bpm * 0.5, 25)  # start slow
+        for i in range(n):
+            # Progressive bradycardia with increasing irregularity
+            progress = i / max(n, 1)  # 0->1 over the recording
+            hr_decline = current_hr * (1.0 - 0.7 * progress)  # HR drops to ~30% of initial
+            hr_decline = max(hr_decline, 15.0)
+
+            # RR with increasing variability (CV goes from 10% to 40%)
+            cv = 0.10 + 0.30 * progress
+            rr = (60.0 / hr_decline) * (1 + rng.normal(0, cv))
+            rr = float(np.clip(rr, 0.5, 8.0))  # long pauses between gasps
+
+            # Progressive decline in stroke volume
+            sv_scale = float(np.clip(rng.normal(0.6 * (1.0 - 0.8 * progress), 0.1), 0.0, 0.8))
+
+            # Agonal gasps: intermittent "beats" with very low perfusion
+            perfusion_ok = sv_scale > 0.15 and rng.random() > (0.3 + 0.6 * progress)
+
+            beats.append(Beat(
+                rr_s=rr, beat_type="agonal", sv_scale=sv_scale,
+                perfusion_ok=bool(perfusion_ok), label_rhythm="agonal",
+            ))
         return beats

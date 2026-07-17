@@ -2,16 +2,28 @@
 wristppg — a physiologically-grounded wrist PPG simulator for research /
 data-augmentation use.
 
-See README.md in the package root for a full description of the pipeline,
-the evidence base for each component, and an explicit list of assumptions
-that are heuristic rather than validated against primary literature or
-public wrist-PPG datasets.
+v0.3.0: Major overhaul for cardiac arrest realism with wrist anatomy,
+ambient light contamination, baroreflex autonomic model, cardiac arrest
+disease profiles, and realistic wrist motion artifacts.
 """
 
 from .simulator import WristPPGSimulator, SimulationResult
 from .disease import DiseaseProfile, PROFILES
 from .motion import MotionArtifactModel, MotionEvent
+from .autonomic import AutonomicSimulator
+from .microvasculature import MicrovascularBedModel
+from .optics import SkinOpticalModel, SkinOpticalParams, WristAnatomy
+from .contact import ContactModel, ContactState
+from .arrhythmia import RhythmGenerator, ArrhythmiaConfig
 
-__all__ = ["WristPPGSimulator", "SimulationResult", "DiseaseProfile", "PROFILES",
-           "MotionArtifactModel", "MotionEvent"]
-__version__ = "0.2.0"
+__all__ = [
+    "WristPPGSimulator", "SimulationResult",
+    "DiseaseProfile", "PROFILES",
+    "MotionArtifactModel", "MotionEvent",
+    "AutonomicSimulator",
+    "MicrovascularBedModel",
+    "SkinOpticalModel", "SkinOpticalParams", "WristAnatomy",
+    "ContactModel", "ContactState",
+    "RhythmGenerator", "ArrhythmiaConfig",
+]
+__version__ = "0.3.0"

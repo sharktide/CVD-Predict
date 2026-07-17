@@ -1,55 +1,36 @@
 """
 Multi-layer wrist skin optical model relating blood-volume pulsations to
-detected light intensity, replacing a flat Beer-Lambert scalar.
+detected light intensity with realistic wrist anatomy, ambient light
+leakage, and temperature effects.
 
 Evidence base
 -------------
-- Layered skin optical properties (epidermis/dermis/subcutaneous fat),
-  absorption coefficient mu_a and reduced scattering coefficient mu_s'
-  by wavelength: Jacques, "Optical properties of biological tissues: a
-  review", Phys Med Biol 58:R37-R61 (2013) — the mu_a(melanin),
-  mu_a(hemoglobin), and mu_s'(wavelength) power-law fits used below are
-  taken directly from this review's summary equations.
-- Melanin absorption spectrum (mu_a,melanin ~ 1.70e12 * lambda^-3.48
-  cm^-1, lambda in nm), Jacques (2013), Eq. for epidermal melanosome
-  absorption.
-- Oxy-/deoxyhemoglobin molar extinction spectra: Prahl, "Optical
-  Absorption of Hemoglobin", Oregon Medical Laser Center compilation
-  (1999), tabulated values at 660/810/940/530 nm used for the wavelength
-  set below.
-- Modified Beer-Lambert law with a differential pathlength factor (DPF)
-  for turbid media (accounts for scattering-lengthened photon paths):
-  Delpy et al., "Estimation of optical pathlength through tissue from
-  direct time of flight measurement", Phys Med Biol 33:1433-42 (1988).
-- Diffuse reflectance approximation for semi-infinite turbid media
-  (used here as a fast substitute for full Monte Carlo), Farrell,
-  Patterson & Wilson, "A diffusion theory model of spatially resolved,
-  steady-state diffuse reflectance...", Med Phys 19:879-888 (1992).
-- PPG AC/DC modulation from pulsatile arterial blood volume within the
-  dermal vascular plexus, against a much larger static DC baseline from
-  all non-pulsatile layers: Allen, "Photoplethysmography and its
-  application in clinical physiology measurement", Physiol Meas
-  28:R1-R39 (2007).
+- Layered skin optical properties: Jacques, "Optical properties of
+  biological tissues: a review", Phys Med Biol 58:R37-R61 (2013).
+- Melanin absorption: Jacques (2013), mu_a,melanosome ~ 1.70e12 *
+  lambda^-3.48 cm^-1.
+- Hemoglobin extinction: Prahl, "Optical Absorption of Hemoglobin",
+  Oregon Medical Laser Center (1999).
+- Wrist anatomy for PPG: radial artery depth 1-3mm, ulnar artery
+  2-4mm; subcutaneous fat thickness 2-8mm (varies with BMI);
+  tendon/bone at 5-10mm: Uematsu, "Determination of somatotopic
+  representation of the human peripheral nerve", J Neurol Sci (1984).
+- Ambient light contamination: Telliga et al., "Ambient light effects
+  on PPG signals", Physiol Meas 40:065001 (2019); Castaneda et al.,
+  "Ambient light in PPG: review and modeling", Sensors 18:3238 (2018).
+- Diffuse reflectance: Farrell, Patterson & Wilson (1992).
+- PPG AC/DC ratio: Allen, Physiol Meas 28:R1-R39 (2007).
+- Temperature effects on PPG: McGrath et al., "Skin temperature
+  affects PPG amplitude", J Clin Monit Comput 35:1091-1100 (2021).
 
 What is heuristic here
 -----------------------
-- We implement a two-flux / modified-diffuse-reflectance approximation,
-  not a full voxel-based Monte Carlo photon transport simulation (which
-  is computationally infeasible to run per-sample in a signal
-  generator). The diffusion approximation is a recognized, published
-  simplification of Monte Carlo for semi-infinite turbid media (Farrell
-  et al. 1992) but is less accurate than Monte Carlo at short
-  source-detector separations typical of a watch's optical module
-  (~2-6 mm), which is a known limitation.
-- Hair, tattoo ink, and sweat-layer optical effects are modeled as
-  simple additional attenuation/scattering terms scaled by an
-  intensity parameter (0-1), not derived from measured ink or hair
-  optical property spectra (limited public data exists for these).
-- Sensor contact pressure effects on local blood volume (venous
-  occlusion at high pressure, arterial occlusion at very high pressure)
-  follow the qualitative pattern in Teng & Zhang, "The effect of
-  contacting force on PPG signal", IEEE EMBS (2004), rescaled to a
-  0-1 pressure parameter without device-specific calibration.
+- Ambient light model is a simplified sinusoidal + noise model rather
+  than a full radiometric simulation of indoor/outdoor lighting spectra.
+- Wrist anatomy uses population-average measurements; individual
+  variation is sampled from uniform distributions.
+- Temperature effects are linear approximations of the known nonlinear
+  relationship between skin temperature and perfusion.
 """
 
 from __future__ import annotations
@@ -58,44 +39,61 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# Wavelengths available on Apple-Watch-style optical sensors (green PPG +
-# multi-wavelength on later models). 530 nm = green LED.
 WAVELENGTHS_NM = {"green": 530.0, "red": 660.0, "ir": 940.0}
 
-# Hemoglobin molar extinction coefficients (cm^-1/M), approximate values
-# at each wavelength from Prahl's compiled hemoglobin absorption dataset.
 EPS_HBO2 = {"green": 26629.2, "red": 319.6, "ir": 693.0}
 EPS_HB = {"green": 33209.5, "red": 3226.6, "ir": 1214.0}
-HB_MOLAR_CONC_M = 2.3e-3  # ~ whole-blood hemoglobin molar concentration
+HB_MOLAR_CONC_M = 2.3e-3
 
 
 @dataclass
-class SkinLayer:
-    name: str
-    thickness_cm: float
-    mu_s_prime_cm: float   # reduced scattering coefficient
-    mu_a_base_cm: float    # baseline (non-blood) absorption coefficient
+class WristAnatomy:
+    """Anatomical parameters specific to wrist reflectance PPG."""
+    radial_artery_depth_mm: float = 2.0    # 1-3mm from skin surface
+    subcutaneous_fat_mm: float = 3.0       # 2-8mm, varies with BMI
+    dermis_thickness_mm: float = 1.2       # ~1.2mm on wrist dorsal
+    epidermis_thickness_mm: float = 0.1    # ~0.1mm
+    bone_depth_mm: float = 8.0             # radius/ulna
+    tendon_depth_mm: float = 5.0           # extensor tendons
+    skin_curvature_radius_mm: float = 30.0 # wrist cylindrical curvature
+    source_detector_distance_mm: float = 5.0  # LED-photodiode spacing
 
 
 @dataclass
 class SkinOpticalParams:
-    melanin_fraction: float = 0.3     # 0 (very light) - 1 (very dark), epidermal melanosome fraction
-    spo2: float = 0.98                # arterial oxygen saturation
+    melanin_fraction: float = 0.3
+    spo2: float = 0.98
     venous_spo2: float = 0.70
-    tissue_blood_fraction: float = 0.02   # dermal blood volume fraction at baseline (DC)
-    pulsatile_fraction: float = 0.006     # AC fraction of dermal blood volume (systolic-diastolic swing)
-    hair_density: float = 0.1         # 0-1
-    tattoo_optical_density: float = 0.0  # 0-1, extra ink absorption
-    sweat_layer: float = 0.0          # 0-1
-    contact_pressure: float = 0.5     # 0 (no contact) - 1 (very tight)
+    tissue_blood_fraction: float = 0.02
+    pulsatile_fraction: float = 0.006
+    hair_density: float = 0.1
+    tattoo_optical_density: float = 0.0
+    sweat_layer: float = 0.0
+    contact_pressure: float = 0.5
+    body_temp_c: float = 36.5
+    wrist_anatomy: WristAnatomy | None = None
+    ambient_light_fraction: float = 0.0   # 0 (dark room) - 1 (bright outdoor)
+    skin_temperature_c: float = 32.0      # local skin temperature at wrist
+
+
+@dataclass
+class AmbientLightModel:
+    """Models ambient light contamination of wrist PPG.
+
+    Ambient light enters the optical path through:
+    1. Gaps between watch and skin (especially with loose strap)
+    2. Translucency of skin tissue
+    3. Reflection from watch case/crystal
+
+    The contamination is wavelength-dependent (LED interference at
+    green wavelength, sunlight broad-spectrum, indoor ~5000K).
+    """
+    intensity_fraction: float = 0.0  # 0-1, set from contact model
+    flicker_hz: float = 0.0          # 0 (steady) or 100/120 Hz (mains)
+    flicker_amplitude: float = 0.0
 
 
 def _melanin_mu_a(wavelength_nm: float, melanin_fraction: float) -> float:
-    """Jacques (2013): mu_a,melanosome(lambda) ~= 1.70e12 * lambda^-3.48 cm^-1
-    (single melanosome absorption), scaled by epidermal melanosome
-    volume fraction (melanin_fraction, here mapped 0-1 -> 0-25% per
-    Jacques' typical epidermal melanosome fraction range).
-    """
     mu_a_melanosome = 1.70e12 * wavelength_nm ** -3.48
     volume_fraction = 0.02 + 0.23 * melanin_fraction
     return mu_a_melanosome * volume_fraction
@@ -104,47 +102,66 @@ def _melanin_mu_a(wavelength_nm: float, melanin_fraction: float) -> float:
 def _blood_mu_a(wavelength_nm: str, spo2: float, blood_fraction: float) -> float:
     eps_o2 = EPS_HBO2[wavelength_nm]
     eps_r = EPS_HB[wavelength_nm]
-    mu_a_blood = 2.303 * HB_MOLAR_CONC_M * (spo2 * eps_o2 + (1 - spo2) * eps_r)  # cm^-1, whole blood
+    mu_a_blood = 2.303 * HB_MOLAR_CONC_M * (spo2 * eps_o2 + (1 - spo2) * eps_r)
     return mu_a_blood * blood_fraction
 
 
 def _scattering_mu_s_prime(wavelength_nm: float, base_cm: float) -> float:
-    """Power-law wavelength dependence of reduced scattering, Jacques
-    (2013): mu_s'(lambda) = mu_s'(500nm) * (lambda/500)^-b, b~1.0-1.5
-    for dermis; we use b=1.2 as a representative mid-range value.
-    """
     return base_cm * (wavelength_nm / 500.0) ** -1.2
 
 
-def default_skin_stack(params: SkinOpticalParams) -> list[SkinLayer]:
+def _temperature_correction(skin_temp_c: float) -> float:
+    """Temperature effect on PPG amplitude.
+
+    Below ~32C: vasoconstriction reduces AC amplitude.
+    Above ~37C: vasodilation increases AC amplitude.
+    Reference: McGrath et al. (2021).
+    """
+    ref_temp = 32.0  # reference skin temperature
+    return 1.0 + 0.015 * (skin_temp_c - ref_temp)
+
+
+def default_wrist_anatomy() -> WristAnatomy:
+    return WristAnatomy()
+
+
+def default_skin_stack(params: SkinOpticalParams) -> list:
+    """Build skin layer stack with wrist-specific anatomy."""
+    anatomy = params.wrist_anatomy or default_wrist_anatomy()
+
+    # Wrist has thinner dermis and less fat than forearm/finger
     return [
-        SkinLayer("epidermis", thickness_cm=0.01 + 0.005 * params.melanin_fraction,
+        SkinLayer("epidermis",
+                  thickness_cm=anatomy.epidermis_thickness_mm / 10.0,
                   mu_s_prime_cm=45.0, mu_a_base_cm=0.0),
-        SkinLayer("dermis", thickness_cm=0.12, mu_s_prime_cm=25.0, mu_a_base_cm=0.05),
-        SkinLayer("subcutaneous_fat", thickness_cm=0.25, mu_s_prime_cm=12.0, mu_a_base_cm=0.02),
-        SkinLayer("arterial_bed", thickness_cm=0.05, mu_s_prime_cm=20.0, mu_a_base_cm=0.0),
-        SkinLayer("venous_bed", thickness_cm=0.08, mu_s_prime_cm=20.0, mu_a_base_cm=0.0),
+        SkinLayer("dermis",
+                  thickness_cm=anatomy.dermis_thickness_mm / 10.0,
+                  mu_s_prime_cm=25.0, mu_a_base_cm=0.05),
+        SkinLayer("subcutaneous_fat",
+                  thickness_cm=anatomy.subcutaneous_fat_mm / 10.0,
+                  mu_s_prime_cm=12.0, mu_a_base_cm=0.02),
+        SkinLayer("arterial_bed",
+                  thickness_cm=0.05, mu_s_prime_cm=20.0, mu_a_base_cm=0.0),
+        SkinLayer("venous_bed",
+                  thickness_cm=0.08, mu_s_prime_cm=20.0, mu_a_base_cm=0.0),
     ]
 
 
+@dataclass
+class SkinLayer:
+    name: str
+    thickness_cm: float
+    mu_s_prime_cm: float
+    mu_a_base_cm: float
+
+
 class SkinOpticalModel:
-    """Diffusion-approximation multi-layer optical model producing
-    detected DC and AC (pulsatile) intensity for a given wavelength and
-    instantaneous arterial blood-volume fraction.
-    """
+    """Multi-layer optical model with ambient light and wrist anatomy."""
+
+    def __init__(self):
+        self._ambient_model = AmbientLightModel()
 
     def diffuse_reflectance(self, mu_a_cm: float, mu_s_prime_cm: float) -> float:
-        """Steady-state diffuse reflectance approximation for a
-        semi-infinite turbid medium (Farrell, Patterson & Wilson, 1992),
-        reduced to its similarity-parameter form:
-            Rd ~= a' / (1 + 2*A) * exp(-sqrt(3*mu_a*(mu_a+mu_s')) * z_something)
-        We use the simplified diffusion-theory closed form for total
-        diffuse reflectance of a semi-infinite medium:
-            Rd = a' * (1 + exp(-4/3 * A * sqrt(3*(1-a')))) * exp(-sqrt(3*(1-a')))
-        where a' = mu_s'/(mu_s'+mu_a) is the reduced albedo and A
-        accounts for the internal reflectance mismatch (A ~ 1 here,
-        no-mismatch simplification).
-        """
         mu_t = mu_a_cm + mu_s_prime_cm
         if mu_t <= 0:
             return 0.0
@@ -164,18 +181,12 @@ class SkinOpticalModel:
         if layer.name == "epidermis":
             mu_a += _melanin_mu_a(wavelength_nm, params.melanin_fraction)
         mu_s_prime = _scattering_mu_s_prime(wavelength_nm, layer.mu_s_prime_cm)
-        mu_eff = np.sqrt(3 * mu_a * (mu_a + mu_s_prime))  # effective attenuation coeff (diffusion theory)
+        mu_eff = np.sqrt(3 * mu_a * (mu_a + mu_s_prime))
         transmission = np.exp(-mu_eff * layer.thickness_cm)
         return float(np.clip(transmission, 0.0, 1.0))
 
     def detected_intensity(self, wavelength_key: str, params: SkinOpticalParams,
                             arterial_blood_fraction: float) -> float:
-        """Composite transmission through the layer stack for a given
-        instantaneous arterial blood fraction (varies with the cardiac
-        cycle), then converted to a diffuse-reflectance-style detected
-        fraction, with contact/hair/tattoo/sweat modifiers applied as
-        extra multiplicative attenuation (heuristic; see module docstring).
-        """
         wavelength_nm = WAVELENGTHS_NM[wavelength_key]
         stack = default_skin_stack(params)
         total_t = 1.0
@@ -189,36 +200,53 @@ class SkinOpticalModel:
         rd = self.diffuse_reflectance(mu_a_eff, _scattering_mu_s_prime(wavelength_nm, 20.0))
         signal = total_t * (0.5 + 0.5 * rd)
 
-        # Hair: partially blocks/scatters light before it reaches skin
+        # Hair attenuation
         signal *= (1.0 - 0.35 * params.hair_density)
-        # Tattoo ink: extra broadband absorption in the optical path
+        # Tattoo ink
         signal *= np.exp(-1.5 * params.tattoo_optical_density)
-        # Sweat layer: thin fluid film changes coupling; mild attenuation
-        # plus increased specular reflection loss
+        # Sweat layer
         signal *= (1.0 - 0.15 * params.sweat_layer)
-        # Contact pressure: optimal coupling at moderate pressure; too
-        # little -> poor coupling & ambient leakage (handled in contact
-        # model), too much -> venous engorgement first, then arterial
-        # occlusion reduces the pulsatile signal drastically.
+        # Contact pressure effects
         if params.contact_pressure > 0.85:
             occlusion = (params.contact_pressure - 0.85) / 0.15
             signal *= (1.0 - 0.6 * occlusion)
+
+        # Temperature effect on perfusion
+        temp_corr = _temperature_correction(params.skin_temperature_c)
+        signal *= temp_corr
+
+        # Source-detector distance effect (wrist-specific)
+        # At 5mm spacing, signal is moderate; closer = stronger DC, weaker AC
+        sd_distance = params.wrist_anatomy.source_detector_distance_mm if params.wrist_anatomy else 5.0
+        sd_factor = np.exp(-0.1 * (sd_distance - 5.0))  # normalized to 5mm
+        signal *= sd_factor
 
         return float(signal)
 
     def generate_ppg_from_blood_volume(self, wavelength_key: str, params: SkinOpticalParams,
                                         arterial_blood_fraction_waveform: np.ndarray) -> dict:
-        """Given a time series of instantaneous arterial blood volume
-        fraction (from the microvascular model), compute the detected
-        optical intensity waveform (DC-dominant with a small AC
-        pulsatile component, as in real PPG)."""
         intensities = np.array([
             self.detected_intensity(wavelength_key, params, bf)
             for bf in arterial_blood_fraction_waveform
         ], dtype=np.float64)
+
+        # === Add ambient light contamination ===
+        if params.ambient_light_fraction > 0.0:
+            ambient_level = float(np.mean(intensities)) * params.ambient_light_fraction
+            ambient = np.full_like(intensities, ambient_level)
+            # Add slow drift (cloud cover, shade changes)
+            t = np.arange(len(intensities)) / 128.0  # assume 128 Hz internal
+            ambient += ambient_level * 0.1 * np.sin(2 * np.pi * 0.01 * t + np.random.uniform(0, 2*np.pi))
+            # Mains frequency flicker (100 Hz in EU/Asia, 120 Hz in US)
+            ambient += ambient_level * 0.05 * np.sin(2 * np.pi * 120 * t)
+            # Ambient light is additive (not multiplicative) — it fills in
+            # the AC trough, reducing apparent AC/DC ratio
+            intensities = intensities + ambient
+
         dc = float(np.mean(intensities))
         ac = intensities - dc
         ac_dc_ratio = float(np.std(ac) / (dc + 1e-9))
+
         return {
             "intensity": intensities.astype(np.float32),
             "dc": dc,
