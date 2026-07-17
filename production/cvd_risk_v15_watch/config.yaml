@@ -1,0 +1,81 @@
+version: v15
+description: 'Full system: multi-horizon + Green/Yellow/Red tier classification'
+ppg_length: 7500
+sampling_rate_hz: 25
+feature_columns:
+- HRV_CVNN
+- HRV_CVSD
+- HRV_IQRNN
+- HRV_MCVNN
+- HRV_MadNN
+- HRV_MaxNN
+- HRV_MeanNN
+- HRV_MedianNN
+- HRV_MinNN
+- HRV_Prc20NN
+- HRV_Prc80NN
+- HRV_RMSSD
+- HRV_SD1
+- HRV_SD1SD2
+- HRV_SD2
+- HRV_SDNN
+- HRV_SDRMSSD
+- HRV_SDSD
+- HRV_pNN20
+- HRV_pNN50
+- accel_dominant_freq
+- accel_max_magnitude
+- accel_mean_magnitude
+- accel_mean_x
+- accel_mean_y
+- accel_mean_z
+- accel_motion_energy
+- accel_std_magnitude
+- accel_std_x
+- accel_std_y
+- accel_std_z
+- base_hr
+- mean_amplitude
+- pulse_rate
+- signal_length
+- sqi
+- std_amplitude
+- wppg_frac_afib
+- wppg_frac_pvc
+- wppg_frac_sinus
+- wppg_latent_contractility
+- wppg_latent_resistance
+- wppg_latent_stiffness
+- wppg_latent_vascular_tone
+- wppg_mean_aix
+- wppg_mean_ef
+- wppg_mean_hr_beats
+- wppg_mean_ptt
+- wppg_mean_pwv
+- wppg_mean_sv
+- wppg_std_aix
+- wppg_std_ef
+- wppg_std_hr_beats
+- wppg_std_ptt
+- wppg_std_pwv
+- wppg_std_sv
+architecture:
+  ppg_branch: ResNet 1D-CNN (16->32->64) + BiLSTM(32)
+  accel_branch: ResNet 1D-CNN (16->32->64) + BiLSTM(16)
+  cross_attention: PPG queries accel (32-dim)
+  outputs: 3 horizon sigmoids + 3-class tier softmax
+  total_params: 123622
+training:
+  loss: BCE(1h) + BCE(6h) + BCE(24h) + 0.3 * CCE(tier)
+  epochs_trained: 23
+performance_real_test:
+  auroc_1h: 0.5243333333333333
+  auroc_6h: 0.4686666666666667
+  auroc_24h: 0.4193333333333333
+  tier_accuracy: 1.0
+performance_synth_test:
+  auroc_1h: 0.5335515548281506
+  auroc_6h: 0.6733333333333333
+  auroc_24h: 0.6911111111111111
+  tier_accuracy: 0.5
+  tier_f1_macro: 0.3333333333333333

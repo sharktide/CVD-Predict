@@ -45,6 +45,7 @@ FS_INTERNAL_HZ = 128.0  # internal physiological/optical simulation rate
 @dataclass
 class SimulationResult:
     ppg: np.ndarray
+    accel: np.ndarray
     fs_hz: float
     clean_ppg_internal: np.ndarray
     fs_internal_hz: float
@@ -170,6 +171,14 @@ class WristPPGSimulator:
         sensor_out = self.sensor_pipeline.run(noisy, FS_INTERNAL_HZ)
         final_ppg = sensor_out["raw_sensor_output"]
 
+        # Resample accel to match output PPG length (3-axis)
+        n_out = len(final_ppg)
+        t_internal = np.arange(n_internal) / FS_INTERNAL_HZ
+        t_out = np.linspace(0, t_internal[-1], n_out)
+        accel_resampled = np.zeros((n_out, 3), dtype=np.float32)
+        for axis in range(3):
+            accel_resampled[:, axis] = np.interp(t_out, t_internal, accel[:, axis]).astype(np.float32)
+
         meta = {
             "profile": prof.name,
             "activity": activity,
@@ -183,6 +192,7 @@ class WristPPGSimulator:
 
         return SimulationResult(
             ppg=final_ppg,
+            accel=accel_resampled,
             fs_hz=fs_output_hz,
             clean_ppg_internal=clean_optical.astype(np.float32),
             fs_internal_hz=FS_INTERNAL_HZ,

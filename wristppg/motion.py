@@ -60,13 +60,22 @@ class MotionArtifactModel:
         self.fs = fs_hz
 
     def accelerometer_signal(self, n_samples: int, event: MotionEvent) -> np.ndarray:
+        """Generate 3-axis accelerometer signal.
+
+        Returns ndarray of shape (n_samples, 3) with axes [x, y, z].
+        x = primary motion axis (arm swing direction)
+        y = secondary axis (lateral)
+        z = vertical (includes gravity component)
+        """
         profile = ACTIVITY_PROFILES.get(event.activity, ACTIVITY_PROFILES["rest"])
         t = np.arange(n_samples) / self.fs
-        acc = np.zeros(n_samples)
         base_freq = self.rng.uniform(*profile["freq_range"])
+
+        # Generate 1D base signal (primary motion axis)
+        acc_primary = np.zeros(n_samples)
         for h in range(1, profile["n_harm"] + 1):
             phase = self.rng.uniform(0, 2 * np.pi)
-            acc += (profile["intensity"] / h) * np.sin(2 * np.pi * base_freq * h * t + phase)
+            acc_primary += (profile["intensity"] / h) * np.sin(2 * np.pi * base_freq * h * t + phase)
 
         if profile["bursty"]:
             period = 1.0 / base_freq
@@ -78,10 +87,17 @@ class MotionArtifactModel:
                 mask = np.exp(-0.5 * ((t - center) / width) ** 2)
                 envelope += self.rng.exponential(1.0) * mask
             envelope = envelope / (envelope.max() + 1e-9)
-            acc *= (0.4 + 0.6 * envelope)
+            acc_primary *= (0.4 + 0.6 * envelope)
 
-        acc += self.rng.normal(0, 0.03 * profile["intensity"] + 1e-4, n_samples)  # sensor/bone micro-vibration
-        return (acc * event.intensity_scale).astype(np.float32)
+        acc_primary += self.rng.normal(0, 0.03 * profile["intensity"] + 1e-4, n_samples)
+        acc_primary *= event.intensity_scale
+
+        # Decompose into 3 axes with realistic correlations
+        x = acc_primary
+        y = 0.3 * acc_primary + self.rng.normal(0, 0.02 * profile["intensity"] + 1e-4, n_samples)
+        z = 0.1 * acc_primary + self.rng.normal(0, 0.01 * profile["intensity"] + 1e-4, n_samples)
+
+        return np.stack([x, y, z], axis=-1).astype(np.float32)
 
     def couple_to_ppg(self, ppg: np.ndarray, accel: np.ndarray, event: MotionEvent) -> dict:
         """Couple the accelerometer-like signal into the PPG via several
@@ -92,15 +108,27 @@ class MotionArtifactModel:
           - local morphology distortion (bone vibration adding
             high-frequency ripple during contact transients)
           - stochastic dropout (brief total decoupling during high-g events)
+
+        Parameters
+        ----------
+        accel : ndarray of shape (n_samples,) or (n_samples, 3)
+            If 3-axis, the magnitude is used for coupling.
         """
         n = len(ppg)
         profile = ACTIVITY_PROFILES.get(event.activity, ACTIVITY_PROFILES["rest"])
-        accel_env = gaussian_filter1d(np.abs(accel), sigma=max(self.fs * 0.05, 1))
 
-        baseline_wander = gaussian_filter1d(accel, sigma=max(self.fs * 0.2, 1)) * 0.5 * np.std(ppg)
+        # Use magnitude for coupling if 3-axis
+        if accel.ndim == 2:
+            accel_mag = np.sqrt(np.sum(accel ** 2, axis=-1))
+        else:
+            accel_mag = accel
+
+        accel_env = gaussian_filter1d(np.abs(accel_mag), sigma=max(self.fs * 0.05, 1))
+
+        baseline_wander = gaussian_filter1d(accel_mag, sigma=max(self.fs * 0.2, 1)) * 0.5 * np.std(ppg)
         perfusion_mod = 1.0 + 0.20 * profile["intensity"] * np.tanh(accel_env * 2.0) \
-            - 0.10 * profile["intensity"] * accel_env  # net: compression can raise or lower local flow transiently
-        bone_vibration = accel * 0.15 * np.std(ppg) * (accel_env > 0.3 * (accel_env.max() + 1e-9))
+            - 0.10 * profile["intensity"] * accel_env
+        bone_vibration = accel_mag * 0.15 * np.std(ppg) * (accel_env > 0.3 * (accel_env.max() + 1e-9))
 
         dropout_mask = np.ones(n)
         if profile["intensity"] > 0.5:

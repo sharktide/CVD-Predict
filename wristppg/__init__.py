@@ -12,8 +12,10 @@ does not model, and must never be used to claim it models, acute
 myocardial infarction or cardiac arrest signatures from PPG alone.
 """
 
-from .simulator import WristPPGSimulator
+from .simulator import WristPPGSimulator, SimulationResult
 from .disease import DiseaseProfile, PROFILES
+from .motion import MotionArtifactModel, MotionEvent
 
-__all__ = ["WristPPGSimulator", "DiseaseProfile", "PROFILES"]
-__version__ = "0.1.0"
+__all__ = ["WristPPGSimulator", "SimulationResult", "DiseaseProfile", "PROFILES",
+           "MotionArtifactModel", "MotionEvent"]
+__version__ = "0.2.0"
