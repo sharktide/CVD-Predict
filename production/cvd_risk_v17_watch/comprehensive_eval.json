@@ -1,0 +1,356 @@
+{
+  "version": "v17",
+  "n_test": 400,
+  "bootstrap_raw": {
+    "auroc": {
+      "mean": 0.9974157857512703,
+      "std": 0.0017948590210884996,
+      "ci95": [
+        0.9933907829376859,
+        0.9998245696323359
+      ]
+    },
+    "f1": {
+      "mean": 0.9875062546201195,
+      "std": 0.005104802331111914,
+      "ci95": [
+        0.9763430668093563,
+        0.9973478300427622
+      ]
+    },
+    "brier": {
+      "mean": 0.013580523905344307,
+      "std": 0.0048328391435948645,
+      "ci95": [
+        0.004819932905957103,
+        0.024093843996524807
+      ]
+    },
+    "ece": {
+      "mean": 0.017326991127733345,
+      "std": 0.005195557412436322,
+      "ci95": [
+        0.008144392553484068,
+        0.029229811602039264
+      ]
+    }
+  },
+  "bootstrap_calibrated": {
+    "auroc": {
+      "mean": 0.9974157857512703,
+      "std": 0.0017948590210884996,
+      "ci95": [
+        0.9933907829376859,
+        0.9998245696323359
+      ]
+    },
+    "f1": {
+      "mean": 0.9875198270896653,
+      "std": 0.0050989257592270205,
+      "ci95": [
+        0.9763430668093563,
+        0.9973478300427622
+      ]
+    },
+    "brier": {
+      "mean": 0.01312626829650253,
+      "std": 0.004423546046440438,
+      "ci95": [
+        0.005686189944390208,
+        0.02293844199739396
+      ]
+    },
+    "ece": {
+      "mean": 0.01780056898743147,
+      "std": 0.004896427032611016,
+      "ci95": [
+        0.00955787169758696,
+        0.02880096007604152
+      ]
+    }
+  },
+  "cross_validation": {
+    "folds": [
+      {
+        "fold": 1,
+        "seed": 191664964,
+        "n_train": 400,
+        "n_test": 100,
+        "auroc": 0.9407,
+        "f1": 0.8842,
+        "brier": 0.0892,
+        "ece": 0.0842
+      },
+      {
+        "fold": 2,
+        "seed": 1662057958,
+        "n_train": 400,
+        "n_test": 100,
+        "auroc": 0.9159,
+        "f1": 0.7955,
+        "brier": 0.2531,
+        "ece": 0.3064
+      },
+      {
+        "fold": 3,
+        "seed": 1405681632,
+        "n_train": 400,
+        "n_test": 100,
+        "auroc": 0.9764,
+        "f1": 0.9421,
+        "brier": 0.0702,
+        "ece": 0.0846
+      },
+      {
+        "fold": 4,
+        "seed": 942484272,
+        "n_train": 400,
+        "n_test": 100,
+        "auroc": 0.9386,
+        "f1": 0.88,
+        "brier": 0.2212,
+        "ece": 0.2839
+      },
+      {
+        "fold": 5,
+        "seed": 929893138,
+        "n_train": 400,
+        "n_test": 100,
+        "auroc": 0.9804,
+        "f1": 0.932,
+        "brier": 0.159,
+        "ece": 0.2298
+      }
+    ],
+    "mean_auroc": 0.9504,
+    "std_auroc": 0.0245,
+    "mean_f1": 0.8868,
+    "std_f1": 0.0519
+  },
+  "subgroups": {
+    "by_profile": {
+      "healthy": {
+        "n": 196,
+        "note": "single class"
+      },
+      "cardiac_arrest_pulseless_electrical": {
+        "n": 45,
+        "note": "single class"
+      },
+      "cardiac_arrest_asystole": {
+        "n": 41,
+        "note": "single class"
+      },
+      "respiratory_failure_pre_arrest": {
+        "n": 46,
+        "note": "single class"
+      },
+      "pre_arrest_deterioration": {
+        "n": 42,
+        "note": "single class"
+      },
+      "cardiac_arrest_vf": {
+        "n": 30,
+        "note": "single class"
+      }
+    },
+    "by_activity": {
+      "rest": {
+        "n": 233,
+        "auroc": 0.9964,
+        "mean_pred": "0.4514"
+      },
+      "sleep": {
+        "n": 100,
+        "auroc": 0.9992,
+        "mean_pred": "0.568"
+      },
+      "walking": {
+        "n": 67,
+        "auroc": 0.9981,
+        "mean_pred": "0.5544"
+      }
+    },
+    "by_contact": {
+      "good": {
+        "n": 239,
+        "auroc": 0.9996,
+        "mean_pred": "0.5237"
+      },
+      "loose": {
+        "n": 88,
+        "auroc": 1.0,
+        "mean_pred": "0.5259"
+      },
+      "tight": {
+        "n": 73,
+        "auroc": 0.9835,
+        "mean_pred": "0.3792"
+      }
+    }
+  },
+  "errors": {
+    "confusion_matrix": {
+      "tp": 198,
+      "fp": 1,
+      "fn": 6,
+      "tn": 195
+    },
+    "n_errors": 7,
+    "error_rate": 0.0175,
+    "errors": [
+      {
+        "idx": 20,
+        "true": 1,
+        "pred": 0.0053197178058326244,
+        "profile": "cardiac_arrest_vf",
+        "activity": "walking",
+        "contact_mode": "good",
+        "ppg_std": 0.2038506120443344,
+        "ppg_range": 0.7322958707809448
+      },
+      {
+        "idx": 36,
+        "true": 0,
+        "pred": 0.5766825675964355,
+        "profile": "healthy",
+        "activity": "sleep",
+        "contact_mode": "loose",
+        "ppg_std": 0.20211279392242432,
+        "ppg_range": 0.6430712938308716
+      },
+      {
+        "idx": 145,
+        "true": 1,
+        "pred": 0.10632053017616272,
+        "profile": "respiratory_failure_pre_arrest",
+        "activity": "walking",
+        "contact_mode": "tight",
+        "ppg_std": 0.20561520755290985,
+        "ppg_range": 0.7709906697273254
+      },
+      {
+        "idx": 243,
+        "true": 1,
+        "pred": 0.3449065387248993,
+        "profile": "pre_arrest_deterioration",
+        "activity": "sleep",
+        "contact_mode": "good",
+        "ppg_std": 0.2005145102739334,
+        "ppg_range": 0.6917852759361267
+      },
+      {
+        "idx": 275,
+        "true": 1,
+        "pred": 0.0050558969378471375,
+        "profile": "respiratory_failure_pre_arrest",
+        "activity": "rest",
+        "contact_mode": "good",
+        "ppg_std": 0.20233793556690216,
+        "ppg_range": 0.8078722953796387
+      },
+      {
+        "idx": 277,
+        "true": 1,
+        "pred": 0.27216222882270813,
+        "profile": "cardiac_arrest_vf",
+        "activity": "walking",
+        "contact_mode": "good",
+        "ppg_std": 0.20231007039546967,
+        "ppg_range": 0.6465407013893127
+      },
+      {
+        "idx": 280,
+        "true": 1,
+        "pred": 0.0001292301167268306,
+        "profile": "pre_arrest_deterioration",
+        "activity": "rest",
+        "contact_mode": "tight",
+        "ppg_std": 0.20337419211864471,
+        "ppg_range": 0.7268238067626953
+      }
+    ],
+    "signal_stats": {
+      "correct": {
+        "mean_ppg_std": 0.20156781375408173,
+        "median_ppg_std": 0.2026320993900299
+      },
+      "incorrect": {
+        "mean_ppg_std": 0.20076757669448853,
+        "median_ppg_std": 0.20233793556690216
+      }
+    }
+  },
+  "thresholds": {
+    "best_f1": {
+      "threshold": 0.105,
+      "sensitivity": 0.9853,
+      "specificity": 0.9847,
+      "ppv": 0.9853,
+      "npv": 0.9847,
+      "f1": 0.9853,
+      "youden": 0.97,
+      "fp": 3,
+      "fn": 3,
+      "tp": 201,
+      "tn": 193
+    },
+    "best_youden": {
+      "threshold": 0.58,
+      "sensitivity": 0.9706,
+      "specificity": 1.0,
+      "ppv": 1.0,
+      "npv": 0.9703,
+      "f1": 0.9851,
+      "youden": 0.9706,
+      "fp": 0,
+      "fn": 6,
+      "tp": 198,
+      "tn": 196
+    },
+    "high_sensitivity": null
+  },
+  "robustness": {
+    "baseline_auroc": 0.9975,
+    "noise_robustness": {
+      "noise_0.01": 0.9968,
+      "noise_0.05": 0.992,
+      "noise_0.1": 0.9912,
+      "noise_0.2": 0.9905,
+      "noise_0.5": 0.9913
+    },
+    "amplitude_robustness": {
+      "scale_0.5": 0.9929,
+      "scale_0.25": 0.9925,
+      "scale_0.1": 0.9915,
+      "scale_0.05": 0.9918
+    },
+    "no_accelerometer_auroc": 0.9968,
+    "time_shift_robustness": {
+      "shift_50": 0.9875,
+      "shift_100": 0.9912,
+      "shift_200": 0.9922,
+      "shift_500": 0.992
+    }
+  },
+  "latency": {
+    "single_sample_ms": {
+      "mean": 864.38,
+      "std": 28.32,
+      "p50": 852.58,
+      "p95": 921.94,
+      "p99": 970.8
+    },
+    "batch_32_ms": {
+      "mean": 893.38,
+      "std": 4.77,
+      "p50": 891.94,
+      "p95": 904.8
+    },
+    "per_sample_batch_ms": 27.92
+  },
+  "calibration": {
+    "platt_A": 0.7258081436157227,
+    "platt_B": 1.0848422050476074
+  }
+}

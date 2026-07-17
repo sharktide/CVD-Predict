@@ -71,6 +71,10 @@ class SensorPipeline:
         """Simple automatic-gain-control loop: adjusts a scalar LED-drive
         /photodiode gain so the DC level tracks toward the ADC's
         mid-range, with a first-order (RC-like) response time constant.
+
+        During cardiac arrest the DC drops toward zero; the AGC ramps up
+        gain but is clamped so the AC component remains proportionally
+        small (preserving the flat-PPG signature).
         """
         target = 0.5
         n = len(signal)
@@ -81,7 +85,7 @@ class SensorPipeline:
         for i in range(n):
             dc_est = (1 - alpha) * dc_est + alpha * signal[i]
             error = target - dc_est * g
-            g = np.clip(g + 0.05 * error, 0.05, 50.0)
+            g = np.clip(g + 0.05 * error, 0.05, 10.0)
             gain[i] = g
         return signal * gain, gain
 

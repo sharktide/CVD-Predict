@@ -163,6 +163,14 @@ class WristPPGSimulator:
             fill_value=latent.get("tissue_blood_fraction", 0.02)
         )
 
+        # --- Compute overall perfusion scale for assembled waveform ---
+        # During cardiac arrest, the assembled waveform retains interpolation
+        # artifacts between tiny segments.  We apply a global perfusion_scale
+        # to the assembled blood fraction to ensure the PPG goes flat.
+        is_arrhythmic_profile = latent.get("rhythm") in ("vf", "asystole", "agonal")
+        if is_arrhythmic_profile:
+            blood_fraction_full = blood_fraction_full * 0.01 + latent.get("tissue_blood_fraction", 0.02) * 0.99
+
         # --- Optical model with wrist anatomy and ambient light ---
         skin_params = SkinOpticalParams(
             melanin_fraction=latent["melanin_fraction"],
@@ -183,6 +191,11 @@ class WristPPGSimulator:
             wavelength, skin_params, blood_fraction_full
         )
         clean_optical = optics_out["intensity"]
+
+        # Scale clean optical signal so it's in the millivolt range
+        # (real photodiode output is ~0.1-2V, our optics model outputs ~0.001)
+        # Without this, sensor pipeline noise swamps the signal after AGC
+        clean_optical = clean_optical * 500.0
 
         # --- Motion model (3-axis accelerometer) ---
         motion_event = MotionEvent(activity=activity, intensity_scale=1.0)
@@ -329,6 +342,9 @@ class WristPPGSimulator:
             ischemia_state = np.ones(n_samples) * (0.8 if is_arrhythmic else 0.0)
             ischemia_dur = np.ones(n_samples) * (t_cursor if is_arrhythmic else 0.0)
 
+            # Perfusion scale: zero when heart isn't pumping
+            perf_scale = 0.01 if not beat.perfusion_ok else 1.0
+
             # Venous pooling from posture
             posture = "upright"
             venous_pooling = self.microvasc.compute_venous_pooling(posture, t_cursor)
@@ -342,6 +358,7 @@ class WristPPGSimulator:
                 ischemia_duration_s=ischemia_dur,
                 venous_pooling_fraction=venous_pooling,
                 microvascular_integrity=micro_integrity,
+                perfusion_scale=perf_scale,
             )
 
             t_axis = t_cursor + np.arange(n_samples) * dt

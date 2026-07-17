@@ -1,0 +1,122 @@
+{
+  "version": "v17",
+  "n_test": 300,
+  "n_cal": 400,
+  "n_val": 300,
+  "raw": {
+    "auroc": 0.9978551320434336,
+    "pr_auc": 0.9981735158132466,
+    "f1": 0.9876543209876543,
+    "threshold": 0.06999999999999999,
+    "precision": 0.9815950920245399,
+    "recall": 0.9937888198757764,
+    "accuracy": 0.9866666666666667,
+    "brier": 0.014602690003812313,
+    "ece": 0.01510120004415512,
+    "mce": "0.7180811",
+    "log_loss": 0.060184694826602936,
+    "tn": 136,
+    "fp": 3,
+    "fn": 1,
+    "tp": 160
+  },
+  "platt": {
+    "auroc": 0.9978551320434336,
+    "pr_auc": 0.9981735158132466,
+    "f1": 0.9876543209876543,
+    "threshold": 0.2749999999999999,
+    "precision": 0.9815950920245399,
+    "recall": 0.9937888198757764,
+    "accuracy": 0.9866666666666667,
+    "brier": 0.013670021668076515,
+    "ece": 0.011304858547324935,
+    "mce": "0.48720282",
+    "log_loss": 0.055521976202726364,
+    "tn": 136,
+    "fp": 3,
+    "fn": 1,
+    "tp": 160
+  },
+  "temperature": {
+    "auroc": 0.9978551320434336,
+    "pr_auc": 0.9981735158132466,
+    "f1": 0.9876543209876543,
+    "threshold": 0.08499999999999999,
+    "precision": 0.9815950920245399,
+    "recall": 0.9937888198757764,
+    "accuracy": 0.9866666666666667,
+    "brier": 0.014447003903700037,
+    "ece": 0.015259682294725801,
+    "mce": 0.7005601182246319,
+    "log_loss": 0.057530013527398935,
+    "tn": 136,
+    "fp": 3,
+    "fn": 1,
+    "tp": 160
+  },
+  "platt_A": 0.6166831851005554,
+  "platt_B": 0.627776026725769,
+  "temperature_T": 1.0999999999999994,
+  "feature_importance_top20": [
+    {
+      "feature": "HRV_MaxNN",
+      "importance": 0.00017873899638043422
+    },
+    {
+      "feature": "HRV_MeanNN",
+      "importance": 0.00017873899638043422
+    },
+    {
+      "feature": "HRV_IQRNN",
+      "importance": 4.468474909513631e-05
+    },
+    {
+      "feature": "HRV_pNN50",
+      "importance": 4.468474909513631e-05
+    },
+    {
+      "feature": "std_amplitude",
+      "importance": 0.0
+    },
+    {
+      "feature": "HRV_pNN20",
+      "importance": 0.0
+    },
+    {
+      "feature": "accel_mean_x",
+      "importance": 0.0
+    },
+    {
+      "feature": "accel_mean_magnitude",
+      "importance": 0.0
+    },
+    {
+      "feature": "sqi",
+      "importance": 0.0
+    },
+    {
+      "feature": "accel_dominant_freq",
+      "importance": 0.0
+    },
+    {
+      "feature": "HRV_SD1SD2",
+      "importance": 0.0
+    },
+    {
+      "feature": "HRV_SDRMSSD",
+      "importance": 0.0
+    },
+    {
+      "feature": "accel_mean_z",
+      "importance": 0.0
+    },
+    {
+      "feature": "HRV_MinNN",
+      "importance": 0.0
+    },
+    {
+      "feature": "HRV_MCVNN",
+      "importance": 0.0
+    }
+  ]
+}

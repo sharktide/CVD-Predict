@@ -284,6 +284,71 @@ def extract_ppg_features(ppg: np.ndarray, fs: int = 25) -> Dict[str, float]:
         feats.update({"HRV_SD1": sd1, "HRV_SD2": sd2, "HRV_SD1SD2": sd1 / (sd2 + 1e-8)})
 
     feats["pulse_rate"] = float(len(peaks) / (len(ppg) / fs) * 60.0)
+
+    # --- Signal quality features (distinguish pulsatile from flat+noise) ---
+    try:
+        # Spectral flatness (Wiener entropy): 1=flat/noise, 0=tonal/pulsatile
+        fft_mag = np.abs(np.fft.rfft(ppg - np.mean(ppg)))
+        fft_mag = fft_mag[fft_mag > 0]
+        feats["spectral_flatness"] = float(
+            np.exp(np.mean(np.log(fft_mag))) / (np.mean(fft_mag) + 1e-12)
+        )
+
+        # Autocorrelation peak height at expected HR (0.8-2.0 Hz)
+        # High = strong periodicity (pulsatile), low = noise
+        ac = np.correlate(ppg - np.mean(ppg), ppg - np.mean(ppg), mode='full')
+        ac = ac[len(ac)//2:]
+        ac = ac / (ac[0] + 1e-12)
+        # Find peak in 0.8-2.0 Hz range (lag 12-31 samples at 25Hz)
+        lag_lo, lag_hi = int(fs / 2.0), int(fs / 0.8)
+        if lag_hi < len(ac):
+            ac_pulse_band = ac[lag_lo:lag_hi]
+            feats["autocorr_pulse_peak"] = float(np.max(ac_pulse_band)) if len(ac_pulse_band) > 0 else 0.0
+        else:
+            feats["autocorr_pulse_peak"] = 0.0
+
+        # Peak prominence: real PPG peaks have consistent prominence,
+        # noise peaks have random prominence
+        from scipy.signal import find_peaks as _find_peaks
+        ppg_norm = (ppg - np.mean(ppg)) / (np.std(ppg) + 1e-8)
+        pks, props = _find_peaks(ppg_norm, distance=int(fs * 0.3), height=0.0, prominence=0.0)
+        if len(pks) > 3:
+            prominences = props.get("prominences", np.array([]))
+            feats["peak_prominence_mean"] = float(np.mean(prominences)) if len(prominences) > 0 else 0.0
+            feats["peak_prominence_std"] = float(np.std(prominences)) if len(prominences) > 1 else 0.0
+            feats["peak_prominence_cv"] = float(np.std(prominences) / (np.mean(prominences) + 1e-8)) if len(prominences) > 1 else 0.0
+        else:
+            feats["peak_prominence_mean"] = 0.0
+            feats["peak_prominence_std"] = 0.0
+            feats["peak_prominence_cv"] = 1.0
+
+        # Kurtosis: Gaussian noise ~3.0, pulsatile PPG ~higher (sharper peaks)
+        from scipy.stats import kurtosis as _kurtosis
+        feats["ppg_kurtosis"] = float(_kurtosis(ppg - np.mean(ppg)))
+
+        # Spectral concentration: fraction of power in pulse band vs total
+        fft_full = np.abs(np.fft.rfft(ppg - np.mean(ppg))) ** 2
+        freqs_full = np.fft.rfftfreq(len(ppg), d=1.0/fs)
+        pulse_mask = (freqs_full >= 0.8) & (freqs_full <= 2.5)
+        total_power = np.sum(fft_full) + 1e-12
+        pulse_power = np.sum(fft_full[pulse_mask])
+        feats["spectral_concentration"] = float(pulse_power / total_power)
+
+        # Spectral entropy: noise has high entropy, pulsatile has low entropy
+        psd_norm = fft_full / (total_power + 1e-12)
+        psd_norm = psd_norm[psd_norm > 0]
+        feats["spectral_entropy"] = float(-np.sum(psd_norm * np.log2(psd_norm + 1e-12)))
+
+    except Exception:
+        feats.setdefault("spectral_flatness", 0.5)
+        feats.setdefault("autocorr_pulse_peak", 0.0)
+        feats.setdefault("peak_prominence_mean", 0.0)
+        feats.setdefault("peak_prominence_std", 0.0)
+        feats.setdefault("peak_prominence_cv", 1.0)
+        feats.setdefault("ppg_kurtosis", 0.0)
+        feats.setdefault("spectral_concentration", 0.0)
+        feats.setdefault("spectral_entropy", 5.0)
+
     return feats
 
 

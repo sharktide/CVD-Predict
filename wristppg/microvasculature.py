@@ -61,6 +61,7 @@ class MicrovascularBedModel:
         ischemia_duration_s: np.ndarray | None = None,
         venous_pooling_fraction: float = 0.0,
         microvascular_integrity: float = 1.0,
+        perfusion_scale: float = 1.0,
     ) -> np.ndarray:
         """Convert arterial pressure waveform to blood volume fraction.
 
@@ -85,6 +86,9 @@ class MicrovascularBedModel:
         microvascular_integrity : float
             0-1 factor representing microvascular health (1 = healthy,
             0 = completely collapsed as in severe sepsis).
+        perfusion_scale : float
+            0-1 factor for pulsatile amplitude. Set to ~0 when
+            perfusion_ok=False (cardiac arrest) so PPG goes flat.
         """
         p = np.asarray(pressure_mmHg, dtype=np.float64)
         N = len(p)
@@ -96,13 +100,22 @@ class MicrovascularBedModel:
         steepness = max(steepness, 1e-4)
 
         sigmoid = 1.0 / (1.0 + np.exp(-steepness * (p - p0)))
-        sigmoid = (sigmoid - sigmoid.min()) / (sigmoid.max() - sigmoid.min() + 1e-9)
+
+        # Pulsatile amplitude proportional to actual pulse pressure
+        # (NOT normalized away — this is what makes arrest PPG flat)
+        pulse_pressure = float(np.ptp(p))  # max - min
+        normal_pulse_pressure = 40.0       # normal resting pulse pressure (mmHg)
+        pp_scale = np.clip(pulse_pressure / normal_pulse_pressure, 0.0, 3.0)
 
         # --- Tone-dependent baseline and amplitude ---
         tone_baseline_scale = 1.0 - 0.5 * vascular_tone
-        pulsatile_amplitude = baseline_fraction * 0.40 * tone_baseline_scale
+        pulsatile_amplitude = baseline_fraction * 0.40 * tone_baseline_scale * pp_scale * perfusion_scale
 
-        fraction = baseline_fraction * tone_baseline_scale + pulsatile_amplitude * (sigmoid - 0.5)
+        # Center sigmoid so it oscillates around 0
+        sig_range = sigmoid.max() - sigmoid.min()
+        sigmoid_centered = (sigmoid - np.mean(sigmoid)) / (sig_range + 1e-9)
+
+        fraction = baseline_fraction * tone_baseline_scale + pulsatile_amplitude * sigmoid_centered
 
         # --- Microvascular integrity (shock collapse) ---
         # In sepsis/shock, microvasculature collapses progressively

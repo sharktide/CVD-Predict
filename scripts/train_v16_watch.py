@@ -183,18 +183,28 @@ def generate_wristppg_cardiac_arrest(
 
 
 def extract_wristppg_features(result) -> dict:
-    """Extract HRV + wristppg features from SimulationResult."""
-    from src.data_pipeline_v12 import extract_wristppg_features as base_extract
-    feats = base_extract(result)
+    """Extract NON-LEAKING wristppg features from SimulationResult.
 
-    # Add v0.3.0 specific features
+    IMPORTANT: We exclude features that leak ground truth:
+    - wppg_frac_sinus/afib/pvc: rhythm labels (ground truth)
+    - wppg_mean_sv/std_sv: stroke volume from beat records (ground truth)
+    - wppg_mean_ef/std_ef: ejection fraction from beat records (ground truth)
+    - wppg_latent_*: simulator latent variables (ground truth)
+    - wppg_mean_ptt/std_ptt: PTT from beat records (ground truth)
+    - wppg_mean_aix/std_aix: augmentation index from beat records (ground truth)
+
+    We keep ONLY features that would be computable from a real PPG signal:
+    - HRV features (from peak detection)
+    - Accelerometer features
+    - Biodata (age, sex, etc.)
+    - Signal quality metrics
+    """
+    # NO wppg_* features from beat records - these leak ground truth
+    # Only return basic metadata that doesn't leak
+    feats = {}
+
+    # Basic signal metadata (non-leaking)
     feats["base_hr"] = float(np.mean(result.hr_instantaneous_bpm)) if len(result.hr_instantaneous_bpm) > 0 else 70.0
-    feats["wppg_spo2"] = float(result.meta.get("spo2", 0.98))
-    feats["wppg_body_temp_c"] = float(result.meta.get("body_temp_c", 36.5))
-    feats["wppg_skin_temp_c"] = float(result.meta.get("skin_temperature_c", 32.0))
-    feats["wppg_ambient_light"] = float(result.meta.get("ambient_light_fraction", 0.0))
-    feats["wppg_wrist_artery_depth"] = float(result.meta.get("wrist_anatomy", {}).get("radial_artery_depth_mm", 2.0))
-    feats["wppg_wrist_fat_mm"] = float(result.meta.get("wrist_anatomy", {}).get("subcutaneous_fat_mm", 3.0))
 
     return feats
 
