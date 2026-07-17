@@ -1,0 +1,160 @@
+{
+  "calibration": {
+    "ece": 0.10181818181818181,
+    "mce": 0.34999999999999987,
+    "brier": 0.027652712538838387,
+    "reliability": 0.016227272727272726,
+    "resolution": 0.23657024456188083,
+    "uncertainty": "0.24793388"
+  },
+  "threshold_analysis": {
+    "optimal_threshold": 0.3500000000000001,
+    "optimal_f1": 0.9917355371900827,
+    "at_0.345": {
+      "precision": 0.967741935483871,
+      "recall": 1.0,
+      "specificity": 0.96,
+      "npv": 1.0
+    }
+  },
+  "subgroup_analysis": {
+    "sqi": {
+      "Q1 (Lowest SQI)": {
+        "n": 28,
+        "auroc": NaN,
+        "f1": 0.0,
+        "recall": 0.0
+      },
+      "Q2": {
+        "n": 27,
+        "auroc": 1.0,
+        "f1": 1.0,
+        "recall": 1.0
+      },
+      "Q3": {
+        "n": 27,
+        "auroc": NaN,
+        "f1": 0.0,
+        "recall": 0.0
+      },
+      "Q4 (Highest SQI)": {
+        "n": 28,
+        "auroc": 0.975,
+        "f1": 0.9411764705882353,
+        "recall": 1.0
+      }
+    },
+    "hr": {
+      "60-100 bpm": {
+        "n": 110,
+        "auroc": 0.9986666666666667,
+        "f1": 0.9917355371900827,
+        "recall": 1.0
+      }
+    }
+  },
+  "feature_importance": {
+    "base_auroc": 0.9986666666666667,
+    "top_10": {
+      "HRV_Prc80NN": {
+        "mean": 0.07133333333333336,
+        "std": 0.035016821354568725
+      },
+      "HRV_MaxNN": {
+        "mean": 0.014266666666666716,
+        "std": 0.00362338086445367
+      },
+      "HRV_Prc20NN": {
+        "mean": 0.0011333333333333417,
+        "std": 0.0008055363982396285
+      },
+      "HRV_MinNN": {
+        "mean": 0.001000000000000023,
+        "std": 0.002170509412813321
+      },
+      "HRV_MedianNN": {
+        "mean": 0.0002666666666667261,
+        "std": 0.00013333333333336305
+      },
+      "HRV_RMSSD": {
+        "mean": 6.666666666668152e-05,
+        "std": 0.00013333333333336305
+      },
+      "HRV_SD1": {
+        "mean": 6.666666666668152e-05,
+        "std": 0.00013333333333336305
+      },
+      "HRV_CVNN": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "HRV_CVSD": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "HRV_MCVNN": {
+        "mean": 0.0,
+        "std": 0.0
+      }
+    }
+  },
+  "training_dynamics": {
+    "epochs_trained": 26,
+    "min_val_loss_epoch": "7",
+    "min_val_loss": 0.10438896715641022,
+    "max_val_auc_epoch": "6",
+    "max_val_auc": 0.9999999403953552,
+    "final_loss_gap": 0.5778604578226805,
+    "train_loss_start": 0.7225354909896851,
+    "train_loss_end": 0.011000650003552437
+  },
+  "robustness": {
+    "clean_auroc": 0.9986666666666667,
+    "noisy_aurocs": {
+      "\u03c3=0.01": 0.9986666666666667,
+      "\u03c3=0.02": 0.9983333333333333,
+      "\u03c3=0.05": 0.9983333333333333,
+      "\u03c3=0.1": 0.9983333333333333,
+      "\u03c3=0.2": 0.9963333333333334,
+      "\u03c3=0.5": 0.9596666666666667
+    }
+  },
+  "synthetic_profiles": {
+    "Healthy": {
+      "n": 20,
+      "label": 0,
+      "mean_predicted_prob": 0.5230954885482788,
+      "std_predicted_prob": 0.07843215018510818
+    },
+    "Shock": {
+      "n": 20,
+      "label": 1,
+      "mean_predicted_prob": 0.5158087611198425,
+      "std_predicted_prob": 0.06467058509588242
+    },
+    "HFrEF": {
+      "n": 20,
+      "label": 1,
+      "mean_predicted_prob": 0.5395714640617371,
+      "std_predicted_prob": 0.05556275695562363
+    },
+    "AFib": {
+      "n": 20,
+      "label": 1,
+      "mean_predicted_prob": 0.5532119274139404,
+      "std_predicted_prob": 0.06560622900724411
+    },
+    "Hypovolemia": {
+      "n": 20,
+      "label": 1,
+      "mean_predicted_prob": 0.5272126793861389,
+      "std_predicted_prob": 0.05980319529771805
+    },
+    "Sepsis": {
+      "n": 20,
+      "label": 1,
+      "mean_predicted_prob": 0.5251573920249939,
+      "std_predicted_prob": 0.0794568806886673
+    }
+  }
+}
