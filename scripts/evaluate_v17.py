@@ -573,7 +573,7 @@ def latency_profile(model, X_test, n_warmup=10, n_runs=100):
 # PLOTTING
 # ═══════════════════════════════════════════════════════════════════
 def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_results,
-             threshold_results, robustness_results, out_dir):
+             threshold_results, robustness_results, feature_importances, out_dir):
     fig = plt.figure(figsize=(24, 28))
     gs = fig.add_gridspec(5, 4, hspace=0.35, wspace=0.3)
 
@@ -586,20 +586,33 @@ def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_resul
     ax.set_title('ROC Curve', fontweight='bold')
     ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
 
-    # 2. PR Curve
+    # 2. PR Curve — skip extreme endpoints where precision=0
     ax = fig.add_subplot(gs[0, 1])
-    prec, rec, _ = precision_recall_curve(y_test, preds_raw)
-    ax.plot(rec, prec, 'b-', linewidth=2)
+    prec, rec, thresholds_pr = precision_recall_curve(y_test, preds_raw)
+    mask = prec > 0
+    ax.plot(rec[mask], prec[mask], 'b-', linewidth=2)
     ax.set_xlabel('Recall'); ax.set_ylabel('Precision')
     ax.set_title('PR Curve', fontweight='bold'); ax.grid(True, alpha=0.3)
 
-    # 3. Prediction Distribution
+    # 3. Prediction Distribution — use count-based histogram with log scale
     ax = fig.add_subplot(gs[0, 2])
-    ax.hist(preds_raw[y_test == 0], bins=40, alpha=0.6, label='Healthy', color='green', density=True)
-    ax.hist(preds_raw[y_test == 1], bins=40, alpha=0.6, label='Arrest', color='red', density=True)
-    ax.set_xlabel('Predicted Probability'); ax.set_ylabel('Density')
-    ax.set_title('Prediction Distribution', fontweight='bold')
+    bins_hist = np.linspace(0, 1, 51)
+    h_counts, _ = np.histogram(preds_raw[y_test == 0], bins=bins_hist)
+    a_counts, _ = np.histogram(preds_raw[y_test == 1], bins=bins_hist)
+    bin_centers = (bins_hist[:-1] + bins_hist[1:]) / 2
+    width = (bins_hist[1] - bins_hist[0]) * 0.8
+    ax.bar(bin_centers, h_counts, width=width, alpha=0.6, label='Healthy', color='green')
+    ax.bar(bin_centers, a_counts, width=width, alpha=0.6, label='Arrest', color='red')
+    ax.set_yscale('log')
+    ax.set_xlabel('Predicted Probability'); ax.set_ylabel('Count (log scale)')
+    ax.set_title('Prediction Distribution (bimodal)', fontweight='bold')
     ax.legend(); ax.grid(True, alpha=0.3)
+    # Annotate mode locations
+    n_h = int((y_test == 0).sum())
+    n_a = int((y_test == 1).sum())
+    ax.text(0.02, 0.95, f'Healthy: {n_h} samples\nArrest: {n_a} samples',
+            transform=ax.transAxes, fontsize=8, va='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     # 4. Bootstrap CI
     ax = fig.add_subplot(gs[0, 3])
@@ -615,20 +628,21 @@ def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_resul
     ax.set_yticks(y_pos); ax.set_yticklabels(labels_ci)
     ax.set_title('Bootstrap 95% CI', fontweight='bold'); ax.grid(True, alpha=0.3, axis='x')
 
-    # 5. Reliability Diagram (raw)
+    # 5. Reliability Diagram (raw + Platt)
     ax = fig.add_subplot(gs[1, 0])
     bins = np.linspace(0, 1, 16)
     for y_p, label, color in [(preds_raw, 'Raw', 'blue'), (preds_cal, 'Platt', 'green')]:
-        bin_centers, bin_accs = [], []
+        bin_centers, bin_accs, bin_counts = [], [], []
         for i in range(len(bins) - 1):
-            mask = (y_p >= bins[i]) & (y_p < bins[i+1])
-            if mask.sum() > 0:
+            mask_b = (y_p >= bins[i]) & (y_p < bins[i+1])
+            if mask_b.sum() >= 3:  # require min 3 samples per bin
                 bin_centers.append((bins[i] + bins[i+1]) / 2)
-                bin_accs.append(y_test[mask].mean())
+                bin_accs.append(y_test[mask_b].mean())
+                bin_counts.append(int(mask_b.sum()))
         ax.plot(bin_centers, bin_accs, 'o-', color=color, label=label, markersize=4)
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.4)
     ax.set_xlabel('Mean Predicted'); ax.set_ylabel('Fraction Positives')
-    ax.set_title('Reliability Diagram', fontweight='bold')
+    ax.set_title('Reliability Diagram (≥3 samples/bin)', fontweight='bold')
     ax.legend(); ax.grid(True, alpha=0.3)
 
     # 6. Threshold: Sensitivity/Specificity
@@ -647,9 +661,10 @@ def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_resul
     ax.set_title('Threshold Analysis', fontweight='bold')
     ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
 
-    # 7. Confusion Matrix
+    # 7. Confusion Matrix at optimal threshold (not 0.5)
     ax = fig.add_subplot(gs[1, 2])
-    cm = confusion_matrix(y_test, (preds_raw >= 0.5).astype(int), labels=[0, 1])
+    best_t = threshold_results["best_f1"]["threshold"]
+    cm = confusion_matrix(y_test, (preds_raw >= best_t).astype(int), labels=[0, 1])
     im = ax.imshow(cm, cmap=plt.cm.Blues)
     plt.colorbar(im, ax=ax)
     for i in range(2):
@@ -659,23 +674,27 @@ def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_resul
     ax.set_xticks([0, 1]); ax.set_xticklabels(['Healthy', 'Arrest'])
     ax.set_yticks([0, 1]); ax.set_yticklabels(['Healthy', 'Arrest'])
     ax.set_ylabel('True'); ax.set_xlabel('Predicted')
-    ax.set_title('Confusion Matrix (t=0.5)', fontweight='bold')
+    ax.set_title(f'Confusion Matrix (t={best_t:.2f})', fontweight='bold')
 
-    # 8. Feature importance
+    # 8. Feature importance — show actual values even if tiny, with note
     ax = fig.add_subplot(gs[1, 3])
-    fi_path = OUT_DIR / "feature_importance.json"
-    if fi_path.exists():
-        with open(fi_path) as f:
-            fi_data = json.load(f)
-        names = [d["feature"] for d in fi_data[:15]]
-        imps = [d["importance"] for d in fi_data[:15]]
-        ax.barh(range(len(names)), imps, color='steelblue')
+    if feature_importances and len(feature_importances) > 0:
+        names = [d["feature"] for d in feature_importances[:15]]
+        imps = [d["importance"] for d in feature_importances[:15]]
+        max_imp = max(imps) if imps else 1
+        colors_fi = ['steelblue' if v > 0.0001 else 'lightcoral' for v in imps]
+        ax.barh(range(len(names)), imps, color=colors_fi, alpha=0.8)
         ax.set_yticks(range(len(names)))
         ax.set_yticklabels(names, fontsize=7)
-        ax.set_xlabel('Permutation Importance')
-    ax.set_title('Top 15 Features', fontweight='bold'); ax.grid(True, alpha=0.3, axis='x')
+        ax.set_xlabel('Permutation Importance (ΔAUROC)')
+        if max_imp < 0.001:
+            ax.text(0.95, 0.05, 'All ≈ 0:\nModel uses\nPPG/accel\nwaveforms only',
+                    transform=ax.transAxes, fontsize=7, ha='right', va='bottom',
+                    bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
+    ax.set_title('Top 15 Features (tabular)', fontweight='bold')
+    ax.grid(True, alpha=0.3, axis='x')
 
-    # 9. Subgroup: By Profile
+    # 9. Subgroup: By Profile (show mean prediction for each class)
     ax = fig.add_subplot(gs[2, :2])
     profiles = {}
     for i, m in enumerate(metadata_test):
@@ -684,20 +703,22 @@ def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_resul
         profiles[p]["y"].append(y_test[i])
         profiles[p]["p"].append(preds_raw[i])
     prof_names = sorted(profiles.keys())
-    prof_aurocs = []
+    x_pos = np.arange(len(prof_names))
+    width_b = 0.35
+    h_means, a_means = [], []
     for pn in prof_names:
         yt = np.array(profiles[pn]["y"])
         yp = np.array(profiles[pn]["p"])
-        if len(np.unique(yt)) >= 2:
-            prof_aurocs.append(roc_auc_score(yt, yp))
-        else:
-            prof_aurocs.append(0)
-    colors = ['green' if 'healthy' in n else 'red' for n in prof_names]
+        h_means.append(yp[yt == 0].mean() if (yt == 0).any() else 0)
+        a_means.append(yp[yt == 1].mean() if (yt == 1).any() else 0)
     short_names = [n.replace('cardiac_arrest_', 'CA ').replace('pre_arrest_', 'Pre-').replace('respiratory_failure_', 'Resp ') for n in prof_names]
-    ax.barh(range(len(prof_names)), prof_aurocs, color=colors, alpha=0.7)
-    ax.set_yticks(range(len(prof_names))); ax.set_yticklabels(short_names, fontsize=8)
-    ax.set_xlabel('AUROC'); ax.set_title('AUROC by Profile', fontweight='bold')
-    ax.grid(True, alpha=0.3, axis='x')
+    ax.bar(x_pos - width_b/2, h_means, width_b, label='Healthy mean pred', color='green', alpha=0.7)
+    ax.bar(x_pos + width_b/2, a_means, width_b, label='Arrest mean pred', color='red', alpha=0.7)
+    ax.set_xticks(x_pos); ax.set_xticklabels(short_names, fontsize=8, rotation=15)
+    ax.set_ylabel('Mean Predicted Probability')
+    ax.set_title('Mean Prediction by Profile (per class)', fontweight='bold')
+    ax.legend(fontsize=8); ax.grid(True, alpha=0.3, axis='y')
+    ax.axhline(best_t, color='gray', linestyle='--', alpha=0.4, label=f'threshold={best_t:.2f}')
 
     # 10. Subgroup: By Activity
     ax = fig.add_subplot(gs[2, 2])
@@ -715,7 +736,7 @@ def plot_all(y_test, preds_raw, preds_cal, metadata_test, boot_results, cv_resul
     ax.bar(range(len(act_names)), act_aurocs, color='steelblue', alpha=0.7)
     ax.set_xticks(range(len(act_names))); ax.set_xticklabels(act_names, fontsize=8)
     ax.set_ylabel('AUROC'); ax.set_title('AUROC by Activity', fontweight='bold')
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.set_ylim(0.85, 1.005); ax.grid(True, alpha=0.3, axis='y')
 
     # 11. Subgroup: By Contact
     ax = fig.add_subplot(gs[2, 3])
@@ -940,6 +961,66 @@ def main():
     print(f"  Single: {latency['single_sample_ms']['mean']:.1f}ms ± {latency['single_sample_ms']['std']:.1f}ms")
     print(f"  Batch:  {latency['per_sample_batch_ms']:.1f}ms/sample")
 
+    # ── Feature importance: gradient-based (permutation is all ~0) ──
+    print("\nComputing gradient-based feature importance...")
+    import tensorflow as tf
+    feature_importances = []
+    X_feat_tensor = tf.constant(X_test["feature_input"], dtype=tf.float32)
+    with tf.GradientTape() as tape:
+        tape.watch(X_feat_tensor)
+        inputs_t = {
+            "ppg_input": tf.constant(X_test["ppg_input"]),
+            "accel_input": tf.constant(X_test["accel_input"]),
+            "feature_input": X_feat_tensor,
+            "biodata_input": tf.constant(X_test["biodata_input"]),
+        }
+        preds_t = model(inputs_t, training=False)
+    grads = tape.gradient(preds_t, X_feat_tensor)
+    grads_np = grads.numpy()
+    # Mean absolute gradient per feature
+    mean_abs_grad = np.mean(np.abs(grads_np), axis=0)
+    # Also compute integrated gradients (attribution)
+    n_steps = 20
+    baselines = np.zeros_like(X_test["feature_input"])
+    ig_sum = np.zeros_like(X_test["feature_input"])
+    for step in range(n_steps):
+        alpha = step / n_steps
+        interpolated = baselines + alpha * (X_test["feature_input"] - baselines)
+        t_interp = tf.constant(interpolated, dtype=tf.float32)
+        with tf.GradientTape() as tape2:
+            tape2.watch(t_interp)
+            inputs_ig = {
+                "ppg_input": tf.constant(X_test["ppg_input"]),
+                "accel_input": tf.constant(X_test["accel_input"]),
+                "feature_input": t_interp,
+                "biodata_input": tf.constant(X_test["biodata_input"]),
+            }
+            p_ig = model(inputs_ig, training=False)
+        g_ig = tape2.gradient(p_ig, t_interp)
+        ig_sum += g_ig.numpy() / n_steps
+    ig_attribution = (X_test["feature_input"] - baselines) * ig_sum
+    mean_ig = np.mean(np.abs(ig_attribution), axis=0)
+
+    # Merge both metrics
+    for j, col in enumerate(feature_cols):
+        feature_importances.append({
+            "feature": col,
+            "gradient_importance": float(mean_abs_grad[j]),
+            "ig_importance": float(mean_ig[j]),
+            "importance": float(mean_ig[j]),  # primary for plotting
+        })
+    feature_importances.sort(key=lambda x: -x["importance"])
+
+    # Remove old feature importance file
+    fi_old = OUT_DIR / "feature_importance.json"
+    if fi_old.exists():
+        fi_old.unlink()
+
+    print(f"  Top feature: {feature_importances[0]['feature']} "
+          f"(IG={feature_importances[0]['ig_importance']:.6f})")
+    print(f"  Mean |gradient|: {mean_abs_grad.mean():.8f}")
+    print(f"  Mean |IG|: {mean_ig.mean():.8f}")
+
     # ── Save all results ──
     print("\nSaving results...")
     all_results = {
@@ -960,14 +1041,18 @@ def main():
         "calibration": {
             "platt_A": float(platt.A), "platt_B": float(platt.B),
         },
+        "feature_importance": feature_importances[:20],
     }
     with open(OUT_DIR / "comprehensive_eval.json", "w") as f:
         json.dump(all_results, f, indent=2, default=str)
 
+    with open(OUT_DIR / "feature_importance.json", "w") as f:
+        json.dump(feature_importances, f, indent=2, default=str)
+
     # Plot
     print("Generating plots...")
     plot_all(y_test_np, preds_test, preds_cal, meta_test, boot_raw, cv_results,
-             thresholds, robustness, GRAPHS_DIR)
+             thresholds, robustness, feature_importances, GRAPHS_DIR)
 
     print(f"\n{'='*60}")
     print(f"  EVALUATION COMPLETE")

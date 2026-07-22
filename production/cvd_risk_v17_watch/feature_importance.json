@@ -1,0 +1,266 @@
+[
+  {
+    "feature": "signal_length",
+    "gradient_importance": 1.8857883333112113e-05,
+    "ig_importance": 0.15611253678798676,
+    "importance": 0.15611253678798676
+  },
+  {
+    "feature": "HRV_MedianNN",
+    "gradient_importance": 3.407743133720942e-05,
+    "ig_importance": 0.0842583179473877,
+    "importance": 0.0842583179473877
+  },
+  {
+    "feature": "HRV_SDSD",
+    "gradient_importance": 2.674856295925565e-05,
+    "ig_importance": 0.07075928896665573,
+    "importance": 0.07075928896665573
+  },
+  {
+    "feature": "HRV_MeanNN",
+    "gradient_importance": 1.3167014003556687e-05,
+    "ig_importance": 0.059263456612825394,
+    "importance": 0.059263456612825394
+  },
+  {
+    "feature": "HRV_MinNN",
+    "gradient_importance": 1.7877120626508258e-05,
+    "ig_importance": 0.04709814861416817,
+    "importance": 0.04709814861416817
+  },
+  {
+    "feature": "HRV_SDNN",
+    "gradient_importance": 3.8263198803178966e-05,
+    "ig_importance": 0.04630613699555397,
+    "importance": 0.04630613699555397
+  },
+  {
+    "feature": "HRV_MaxNN",
+    "gradient_importance": 8.524099030182697e-06,
+    "ig_importance": 0.044182006269693375,
+    "importance": 0.044182006269693375
+  },
+  {
+    "feature": "HRV_IQRNN",
+    "gradient_importance": 2.023662455030717e-05,
+    "ig_importance": 0.025531833991408348,
+    "importance": 0.025531833991408348
+  },
+  {
+    "feature": "HRV_RMSSD",
+    "gradient_importance": 1.4379138519871049e-05,
+    "ig_importance": 0.023644186556339264,
+    "importance": 0.023644186556339264
+  },
+  {
+    "feature": "HRV_SD1",
+    "gradient_importance": 2.6190346034127288e-05,
+    "ig_importance": 0.022555725648999214,
+    "importance": 0.022555725648999214
+  },
+  {
+    "feature": "HRV_Prc20NN",
+    "gradient_importance": 2.1477813788806088e-05,
+    "ig_importance": 0.020817192271351814,
+    "importance": 0.020817192271351814
+  },
+  {
+    "feature": "HRV_Prc80NN",
+    "gradient_importance": 2.2738464394933544e-05,
+    "ig_importance": 0.014402328990399837,
+    "importance": 0.014402328990399837
+  },
+  {
+    "feature": "HRV_pNN20",
+    "gradient_importance": 2.1123576516401954e-05,
+    "ig_importance": 0.010063440538942814,
+    "importance": 0.010063440538942814
+  },
+  {
+    "feature": "HRV_MadNN",
+    "gradient_importance": 1.854957918112632e-05,
+    "ig_importance": 0.006835292559117079,
+    "importance": 0.006835292559117079
+  },
+  {
+    "feature": "pulse_rate",
+    "gradient_importance": 2.778042107820511e-05,
+    "ig_importance": 0.006739023141562939,
+    "importance": 0.006739023141562939
+  },
+  {
+    "feature": "HRV_pNN50",
+    "gradient_importance": 2.617954305605963e-05,
+    "ig_importance": 0.00637038704007864,
+    "importance": 0.00637038704007864
+  },
+  {
+    "feature": "HRV_SD2",
+    "gradient_importance": 2.0014336769236252e-05,
+    "ig_importance": 0.004132822621613741,
+    "importance": 0.004132822621613741
+  },
+  {
+    "feature": "accel_max_magnitude",
+    "gradient_importance": 1.5751165847177617e-05,
+    "ig_importance": 0.0009624653030186892,
+    "importance": 0.0009624653030186892
+  },
+  {
+    "feature": "accel_mean_magnitude",
+    "gradient_importance": 2.7435173251433298e-05,
+    "ig_importance": 0.0009556980221532285,
+    "importance": 0.0009556980221532285
+  },
+  {
+    "feature": "accel_dominant_freq",
+    "gradient_importance": 2.7993550247629173e-05,
+    "ig_importance": 0.0008990211645141244,
+    "importance": 0.0008990211645141244
+  },
+  {
+    "feature": "spectral_entropy",
+    "gradient_importance": 1.8111288227373734e-05,
+    "ig_importance": 0.0004712232621386647,
+    "importance": 0.0004712232621386647
+  },
+  {
+    "feature": "accel_mean_z",
+    "gradient_importance": 1.338421043328708e-05,
+    "ig_importance": 0.00036697686300612986,
+    "importance": 0.00036697686300612986
+  },
+  {
+    "feature": "peak_prominence_mean",
+    "gradient_importance": 3.254071998526342e-05,
+    "ig_importance": 0.000316707999445498,
+    "importance": 0.000316707999445498
+  },
+  {
+    "feature": "ppg_kurtosis",
+    "gradient_importance": 2.3190081265056506e-05,
+    "ig_importance": 0.00013808939547743648,
+    "importance": 0.00013808939547743648
+  },
+  {
+    "feature": "peak_prominence_cv",
+    "gradient_importance": 3.278361327829771e-05,
+    "ig_importance": 0.00012140124454163015,
+    "importance": 0.00012140124454163015
+  },
+  {
+    "feature": "HRV_SDRMSSD",
+    "gradient_importance": 4.409177563502453e-05,
+    "ig_importance": 0.00012044862523907796,
+    "importance": 0.00012044862523907796
+  },
+  {
+    "feature": "HRV_SD1SD2",
+    "gradient_importance": 1.72409836523002e-05,
+    "ig_importance": 8.613186946604401e-05,
+    "importance": 8.613186946604401e-05
+  },
+  {
+    "feature": "HRV_CVSD",
+    "gradient_importance": 3.95571842091158e-05,
+    "ig_importance": 8.58955827425234e-05,
+    "importance": 8.58955827425234e-05
+  },
+  {
+    "feature": "HRV_CVNN",
+    "gradient_importance": 3.929097510990687e-05,
+    "ig_importance": 6.999546894803643e-05,
+    "importance": 6.999546894803643e-05
+  },
+  {
+    "feature": "peak_prominence_std",
+    "gradient_importance": 1.5165231161518022e-05,
+    "ig_importance": 6.295314233284444e-05,
+    "importance": 6.295314233284444e-05
+  },
+  {
+    "feature": "mean_amplitude",
+    "gradient_importance": 1.9362711100257002e-05,
+    "ig_importance": 4.240887574269436e-05,
+    "importance": 4.240887574269436e-05
+  },
+  {
+    "feature": "spectral_flatness",
+    "gradient_importance": 1.38110799525748e-05,
+    "ig_importance": 2.498184585419949e-05,
+    "importance": 2.498184585419949e-05
+  },
+  {
+    "feature": "sqi",
+    "gradient_importance": 1.2044951290590689e-05,
+    "ig_importance": 2.4472527002217248e-05,
+    "importance": 2.4472527002217248e-05
+  },
+  {
+    "feature": "HRV_MCVNN",
+    "gradient_importance": 1.639995025470853e-05,
+    "ig_importance": 2.374941686866805e-05,
+    "importance": 2.374941686866805e-05
+  },
+  {
+    "feature": "spectral_concentration",
+    "gradient_importance": 1.2364635040285066e-05,
+    "ig_importance": 1.5463248928426765e-05,
+    "importance": 1.5463248928426765e-05
+  },
+  {
+    "feature": "accel_mean_x",
+    "gradient_importance": 1.5135234207264148e-05,
+    "ig_importance": 1.042908479575999e-05,
+    "importance": 1.042908479575999e-05
+  },
+  {
+    "feature": "accel_std_x",
+    "gradient_importance": 2.652393413882237e-05,
+    "ig_importance": 8.314343176607508e-06,
+    "importance": 8.314343176607508e-06
+  },
+  {
+    "feature": "autocorr_pulse_peak",
+    "gradient_importance": 1.6015554137993604e-05,
+    "ig_importance": 5.039280040364247e-06,
+    "importance": 5.039280040364247e-06
+  },
+  {
+    "feature": "std_amplitude",
+    "gradient_importance": 9.26802385947667e-06,
+    "ig_importance": 4.792295385414036e-06,
+    "importance": 4.792295385414036e-06
+  },
+  {
+    "feature": "accel_std_magnitude",
+    "gradient_importance": 1.1585801985347643e-05,
+    "ig_importance": 4.13785028285929e-06,
+    "importance": 4.13785028285929e-06
+  },
+  {
+    "feature": "accel_std_z",
+    "gradient_importance": 2.1085776097606868e-05,
+    "ig_importance": 1.6564907809879514e-06,
+    "importance": 1.6564907809879514e-06
+  },
+  {
+    "feature": "accel_std_y",
+    "gradient_importance": 3.107585871475749e-05,
+    "ig_importance": 1.4850737670712988e-06,
+    "importance": 1.4850737670712988e-06
+  },
+  {
+    "feature": "accel_mean_y",
+    "gradient_importance": 2.350511022086721e-05,
+    "ig_importance": 5.100252664647087e-08,
+    "importance": 5.100252664647087e-08
+  },
+  {
+    "feature": "accel_motion_energy",
+    "gradient_importance": 2.5187555365846492e-05,
+    "ig_importance": 7.72898633982777e-09,
+    "importance": 7.72898633982777e-09
+  }
+]
