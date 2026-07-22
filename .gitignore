@@ -14,3 +14,6 @@ build/
 data/raw/**
 physionet/**
 data/processed/**
+e.py
+output.png
+pollinations-community-ipai-key.txt
