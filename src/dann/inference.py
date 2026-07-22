@@ -4,7 +4,7 @@ Cardiac Arrest Detection - Inference Pipeline
 Usage:
     from src.dann.inference import CardiacArrestPredictor
     
-    predictor = CardiacArrestPredictor("models/cardiac_arrest_v4/")
+    predictor = EarlyWarningPredictor("models/cardiac_arrest_v4/")
     
     # From raw PPG (1500 samples @ 25Hz)
     result = predictor.predict_ppg(ppg_signal)
