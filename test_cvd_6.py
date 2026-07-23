@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from src.dann.inference import EarlyWarningPredictor
+from src.dann.inference_v5 import EarlyWarningPredictor
 
 def generate_wrist_noise(n_samples, fs=25):
     """Simulates wrist-PPG specific artifacts: baseline wander and motion spikes."""
@@ -121,7 +121,7 @@ def build_hours_ahead_arrest_stream(fs=25):
 if __name__ == "__main__":
     print("=== Smartwatch Wrist-PPG Production Simulation ===")
     
-    MODEL_PATH = "models/cardiac_arrest_v4/"
+    MODEL_PATH = "models/cardiac_arrest_v6/"
     predictor_pipeline = EarlyWarningPredictor(MODEL_PATH)
     
     # 1. Evaluate Daily Motion Performance
