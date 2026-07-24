@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-07-23T17:07:30.973693",
+  "model": "v3",
+  "metrics": {
+    "accuracy": 0.98125,
+    "sensitivity": 0.9858823529411764,
+    "specificity": 0.976,
+    "f1": 0.9824150058616647,
+    "auc_roc": 0.9980235294117648,
+    "auprc": 0.9985950292560648,
+    "mcc": 0.9623625218005216,
+    "brier_score": 0.01659429632127285,
+    "fpr": 0.02400000000000002,
+    "accuracy_ci_lower": 0.97125,
+    "accuracy_ci_upper": 0.99,
+    "sensitivity_ci_lower": 0.9723487794402721,
+    "sensitivity_ci_upper": 0.9954763784708515,
+    "specificity_ci_lower": 0.9602068965517241,
+    "specificity_ci_upper": 0.9894186874397957,
+    "f1_ci_lower": 0.9725616688756699,
+    "f1_ci_upper": 0.9907834101382489,
+    "auc_roc_ci_lower": 0.9947871881352368,
+    "auc_roc_ci_upper": 0.9997484941049868,
+    "fpr_ci_lower": 0.010581312560204382,
+    "fpr_ci_upper": 0.03979310344827591,
+    "tp": 419,
+    "fp": 9,
+    "fn": 6,
+    "tn": 366
+  },
+  "baseline": {
+    "gradient_boosting": {
+      "auc": 0.995996862745098,
+      "accuracy": 0.98125,
+      "sensitivity": 0.9764705882352941
+    }
+  },
+  "statistical_tests": {
+    "mcnemar_p": 0.7892680261342813,
+    "significant": "False"
+  },
+  "subgroups": {
+    "age_<65": {
+      "n": 800,
+      "accuracy": 0.98125,
+      "sensitivity": 0.9858823529411764,
+      "fpr": 0.02400000000000002,
+      "auc": 0.9980235294117648
+    },
+    "male": {
+      "n": 392,
+      "accuracy": 0.9821428571428571,
+      "sensitivity": 0.982532751091703,
+      "fpr": 0.018404907975460127,
+      "auc": 0.9973209740938195
+    },
+    "female": {
+      "n": 408,
+      "accuracy": 0.9803921568627451,
+      "sensitivity": 0.9897959183673469,
+      "fpr": 0.028301886792452824,
+      "auc": 0.9995186753946862
+    },
+    "low_spo2": {
+      "n": 800,
+      "accuracy": 0.98125,
+      "sensitivity": 0.9858823529411764,
+      "fpr": 0.02400000000000002,
+      "auc": 0.9980235294117648
+    }
+  }
+}
