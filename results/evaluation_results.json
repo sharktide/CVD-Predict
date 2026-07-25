@@ -1,0 +1,196 @@
+{
+  "test_samples": 40,
+  "test_positive": 10,
+  "test_negative": 30,
+  "best_threshold": 0.25000000000000006,
+  "auroc": {
+    "value": 0.58,
+    "ci_lower": 0.30666666666666664,
+    "ci_upper": 0.8049538352272727
+  },
+  "auprc": {
+    "value": 0.466881627144785,
+    "ci_lower": 0.17857238247863258,
+    "ci_upper": 0.7357617845117845
+  },
+  "sensitivity": {
+    "value": 0.7,
+    "ci_lower": 0.369034090909091,
+    "ci_upper": 1.0
+  },
+  "specificity": {
+    "value": 0.6,
+    "ci_lower": 0.4182029177718834,
+    "ci_upper": 0.7706182795698923
+  },
+  "ppv": {
+    "value": 0.3684210526315789,
+    "ci_lower": 0.13333333333333333,
+    "ci_upper": 0.6153846153846154
+  },
+  "npv": {
+    "value": 0.8571428571428571,
+    "ci_lower": 0.6897836538461539,
+    "ci_upper": 1.0
+  },
+  "brier": {
+    "value": 0.21324389849800623,
+    "ci_lower": 0.12349222617354502,
+    "ci_upper": 0.3038174525842315
+  },
+  "calibration": {
+    "ece": 0.25239856354892254,
+    "mce": 0.47871772944927216
+  },
+  "model_config": {
+    "model_dim": 128,
+    "tokens_per_modality": 256,
+    "num_layers": 3,
+    "num_heads": 4,
+    "total_params": 17327520,
+    "variable_length": true
+  },
+  "data_config": {
+    "n_patients": 200,
+    "natural_ohca_progression": true,
+    "disease_models": 20
+  },
+  "training_history": [
+    {
+      "epoch": 1,
+      "train_loss": 2.8642080668359995,
+      "val_loss": 1.664737293349677,
+      "auroc": 0.4117647058823529,
+      "sensitivity": 0.25,
+      "specificity": 0.9117647058823529
+    },
+    {
+      "epoch": 2,
+      "train_loss": 5.435376150010996,
+      "val_loss": 1.414626629581969,
+      "auroc": 0.48529411764705876,
+      "sensitivity": 0.5,
+      "specificity": 0.6764705882352942
+    },
+    {
+      "epoch": 3,
+      "train_loss": 4.081034378500641,
+      "val_loss": 1.106381740224989,
+      "auroc": 0.4926470588235294,
+      "sensitivity": 0.5,
+      "specificity": 0.4411764705882353
+    },
+    {
+      "epoch": 4,
+      "train_loss": 3.7054611084606037,
+      "val_loss": 0.897894642266788,
+      "auroc": 0.5661764705882353,
+      "sensitivity": 0.75,
+      "specificity": 0.38235294117647056
+    },
+    {
+      "epoch": 5,
+      "train_loss": 3.824035221243832,
+      "val_loss": 0.768290954200845,
+      "auroc": 0.661764705882353,
+      "sensitivity": 0.75,
+      "specificity": 0.29411764705882354
+    },
+    {
+      "epoch": 6,
+      "train_loss": 3.5582996284892636,
+      "val_loss": 0.8621166063178527,
+      "auroc": 0.6544117647058824,
+      "sensitivity": 0.75,
+      "specificity": 0.5
+    },
+    {
+      "epoch": 7,
+      "train_loss": 2.8247681547288543,
+      "val_loss": 0.948601322346612,
+      "auroc": 0.6911764705882353,
+      "sensitivity": 0.75,
+      "specificity": 0.7352941176470589
+    },
+    {
+      "epoch": 8,
+      "train_loss": 3.2722761438436168,
+      "val_loss": 0.7440957772104364,
+      "auroc": 0.6838235294117647,
+      "sensitivity": 1.0,
+      "specificity": 0.23529411764705882
+    },
+    {
+      "epoch": 9,
+      "train_loss": 2.5629119011364208,
+      "val_loss": 1.0394983949433816,
+      "auroc": 0.6764705882352942,
+      "sensitivity": 0.75,
+      "specificity": 0.6470588235294118
+    },
+    {
+      "epoch": 10,
+      "train_loss": 3.419287412326647,
+      "val_loss": 0.9759884059037033,
+      "auroc": 0.6470588235294118,
+      "sensitivity": 0.75,
+      "specificity": 0.5588235294117647
+    },
+    {
+      "epoch": 11,
+      "train_loss": 3.3054920591079116,
+      "val_loss": 0.9504030115510288,
+      "auroc": 0.6544117647058824,
+      "sensitivity": 0.75,
+      "specificity": 0.20588235294117646
+    },
+    {
+      "epoch": 12,
+      "train_loss": 2.569297619132597,
+      "val_loss": 1.0693170043982958,
+      "auroc": 0.6691176470588235,
+      "sensitivity": 0.75,
+      "specificity": 0.4411764705882353
+    },
+    {
+      "epoch": 13,
+      "train_loss": 2.5481806164623757,
+      "val_loss": 1.0288613956225545,
+      "auroc": 0.6691176470588235,
+      "sensitivity": 0.75,
+      "specificity": 0.38235294117647056
+    },
+    {
+      "epoch": 14,
+      "train_loss": 3.060160552595907,
+      "val_loss": 1.123104483673447,
+      "auroc": 0.6470588235294118,
+      "sensitivity": 0.75,
+      "specificity": 0.29411764705882354
+    },
+    {
+      "epoch": 15,
+      "train_loss": 2.3162423838283135,
+      "val_loss": 1.2793612129202014,
+      "auroc": 0.661764705882353,
+      "sensitivity": 0.75,
+      "specificity": 0.3235294117647059
+    },
+    {
+      "epoch": 16,
+      "train_loss": 2.401759475608895,
+      "val_loss": 1.3792728675823462,
+      "auroc": 0.639705882352941,
+      "sensitivity": 0.75,
+      "specificity": 0.2647058823529412
+    },
+    {
+      "epoch": 17,
+      "train_loss": 2.1342118010448106,
+      "val_loss": 1.385681121953224,
+      "auroc": 0.6544117647058822,
+      "sensitivity": 0.75,
+      "specificity": 0.38235294117647056
+    }
+  ]
+}

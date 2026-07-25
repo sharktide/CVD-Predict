@@ -1,0 +1,27 @@
+[2026-07-25 05:43:32] Starting full pipeline...
+[2026-07-25 05:43:32] ============================================================
+[2026-07-25 05:43:32] PHASE 1: DATA GENERATION
+[2026-07-25 05:43:32] ============================================================
+[2026-07-25 05:43:32]   Generating patients 1-10/50...
+[2026-07-25 05:43:35]   Running totals: train=8, val=1, test=2
+[2026-07-25 05:43:35]   Generating patients 11-20/50...
+[2026-07-25 05:43:38]   Running totals: train=20, val=3, test=5
+[2026-07-25 05:43:38]   Generating patients 21-30/50...
+[2026-07-25 05:43:41]   Running totals: train=29, val=4, test=7
+[2026-07-25 05:43:41]   Generating patients 31-40/50...
+[2026-07-25 05:43:44]   Running totals: train=36, val=5, test=10
+[2026-07-25 05:43:44]   Generating patients 41-50/50...
+[2026-07-25 05:43:47]   Running totals: train=44, val=7, test=13
+[2026-07-25 05:43:47]   Injecting OHCA-positive cases...
+[2026-07-25 05:43:47] Final: Train=44, Val=7, Test=13
+[2026-07-25 05:43:47] ECG durations (seconds): min=69.0, max=396.1, mean=237.5
+[2026-07-25 05:43:47] Positive rate in train: 0.136
+[2026-07-25 05:43:47] ============================================================
+[2026-07-25 05:43:47] PHASE 2: TRAINING
+[2026-07-25 05:43:47] ============================================================
+[2026-07-25 05:43:47] Train batches: 22
+[2026-07-25 05:43:47] Val batches: 4
+[2026-07-25 05:44:35] Epoch  1/20: train_loss=2.2884 val_loss=1.0259 AUROC=1.000 [1.000-1.000] Sens=1.000 Spec=0.167 PPV=0.167 Brier=0.5705 (48.6s)
+[2026-07-25 05:44:35]   → New best AUROC: 1.000
+[2026-07-25 05:45:22] Epoch  2/20: train_loss=1.5210 val_loss=0.8285 AUROC=1.000 [1.000-1.000] Sens=1.000 Spec=0.667 PPV=0.333 Brier=0.0928 (47.0s)
+[2026-07-25 05:45:22] Epoch  2/20: train_loss=1.5210 val_loss=0.8285 AUROC=1.000 [1.000-1.000] Sens=1.000 Spec=0.667 PPV=0.333 Brier=0.0928 (47.0s)

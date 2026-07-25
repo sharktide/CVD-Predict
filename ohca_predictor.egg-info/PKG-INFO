@@ -1,0 +1,135 @@
+Metadata-Version: 2.4
+Name: ohca-predictor
+Version: 1.0.0
+Summary: Multimodal Wearable AI for Out-of-Hospital Cardiac Arrest Prediction
+Author: OHCA Predictor Team
+License: MIT
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: tensorflow>=2.12.0
+Requires-Dist: numpy>=1.23.0
+Requires-Dist: scipy>=1.10.0
+Requires-Dist: scikit-learn>=1.2.0
+Requires-Dist: requests>=2.28.0
+Requires-Dist: matplotlib>=3.6.0
+Requires-Dist: seaborn>=0.12.0
+Requires-Dist: tensorboard>=2.12.0
+Requires-Dist: tqdm>=4.64.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Dynamic: author
+Dynamic: requires-python
+
+# OHCA Predictor
+
+## Multimodal Wearable AI System for Predicting Out-of-Hospital Cardiac Arrest (OHCA)
+
+A production-ready Python system that forecasts Out-of-Hospital Cardiac Arrest up to 4 hours in advance by processing multi-modal wearable sensor streams from a wrist-worn device.
+
+---
+
+## Architecture
+
+```
+ohca_predictor/
+├── config.py                      # Centralized configuration system
+├── simulator/                     # Module 1: Longitudinal Virtual Patient Simulator
+│   ├── patient.py                 # Virtual patient state representation
+│   ├── physiology.py              # Physiological subsystems (circadian, ANS, respiratory)
+│   ├── diseases.py                # Disease progression models (20 disease types)
+│   ├── sensors.py                 # Wearable sensor physics simulation
+│   ├── population.py              # Population generator with comorbidity distributions
+│   └── generator.py               # Top-level data generation orchestrator
+├── model/                         # Module 2: Multimodal Foundation Model
+│   ├── tokenizer.py               # Signal tokenization layers
+│   ├── attention.py               # Cross-attention mechanisms
+│   ├── encoder.py                 # Transformer encoder blocks
+│   ├── heads.py                   # Prediction heads
+│   ├── architecture.py            # Complete model assembly
+│   └── losses.py                  # Custom loss functions
+├── training/                      # Module 3: Training Pipeline
+│   ├── trainer.py                 # Training loop and orchestration
+│   ├── callbacks.py               # Custom Keras callbacks
+│   └── curriculum.py              # Curriculum learning scheduler
+├── evaluation/                    # Module 4: Evaluation Framework
+│   ├── metrics.py                 # All evaluation metrics with bootstrap CI
+│   ├── calibration.py             # Calibration analysis
+│   ├── explainability.py          # Feature importance and interpretability
+│   └── robustness.py              # Robustness and OOD testing
+├── llm/                           # Module 5: LLM Clinical Summarization
+│   ├── orchestrator.py            # Alert orchestration layer
+│   └── prompts.py                 # Clinical prompt templates
+├── utils/                         # Utility modules
+│   ├── logging.py                 # Structured logging
+│   ├── visualization.py           # Visualization tools
+│   ├── reproducibility.py         # Deterministic execution
+│   ├── profiling.py               # Performance profiling
+│   └── io_utils.py                # Data I/O utilities
+├── tests/                         # Unit tests
+└── scripts/                       # Executable scripts
+```
+
+## Quick Start
+
+### Installation
+
+```bash
+pip install -e .
+```
+
+### Generate Synthetic Data
+
+```bash
+python -m ohca_predictor.scripts.generate_data \
+    --num-patients 1000 \
+    --output-dir data/ \
+    --seed 42
+```
+
+### Train Model
+
+```bash
+python -m ohca_predictor.scripts.train \
+    --data-dir data/ \
+    --output-dir models/ \
+    --epochs 100 \
+    --seed 42
+```
+
+### Evaluate Model
+
+```bash
+python -m ohca_predictor.scripts.evaluate \
+    --checkpoint models/best_model \
+    --data data/test/ \
+    --output-dir evaluation/
+```
+
+## Key Design Decisions
+
+1. **Latent Physiological States**: OHCA is modeled as culmination of complex physiological deterioration, not direct label assignment
+2. **Asymmetric Cross-Attention**: ECG queries motion context for artifact detection
+3. **Pre-Norm Transformer**: More stable training with deep networks and mixed precision
+4. **ALiBi Positional Encoding**: Handles variable-length sequences without maximum position limits
+5. **Clinically Weighted Loss**: 10:1 false-negative to false-positive weight (missed OHCA = death)
+6. **Discrete-Time Survival Analysis**: Temporal resolution for "when is risk highest?"
+7. **Monte Carlo Dropout**: Epistemic uncertainty estimation for clinical flagging
+8. **Curriculum Learning**: Gradually increases task difficulty for better convergence
+9. **Hard Negative Cohorts**: 12 categories of patients with ECG abnormalities but no OHCA risk
+
+## Clinical Safety
+
+- All LLM outputs include medical disclaimers
+- Model provides uncertainty estimates for flagging uncertain cases
+- Survival analysis provides temporal risk resolution
+- Extensive calibration analysis ensures reliable probability estimates
+- Robustness testing validates performance under distribution shift
+
+## Requirements
+
+- Python >= 3.9
+- TensorFlow >= 2.12.0
+- NumPy >= 1.23.0
+- SciPy >= 1.10.0
+- Scikit-Learn >= 1.2.0
