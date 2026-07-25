@@ -1,0 +1,6 @@
+db/*
+**/2.ipynb
+models/*
+logs/*
+*.pyc
+__pycache__/*
