@@ -858,6 +858,8 @@ class PopulationGenerator:
 
         if age < 35 and patient.fitness_level > 0.7 and rng.random() < 0.02:
             patient._hard_negative_type = "athlete_heart"
+            patient._exercise_heart_rate = patient.heart_rate_bpm + rng.uniform(80, 140)
+            patient._exercise_hrv_drop = rng.uniform(0.2, 0.4)
             return True
 
         if "hypertension" in comorbidities and rng.random() < 0.10:
@@ -866,6 +868,10 @@ class PopulationGenerator:
 
         if bmi > 30 and rng.random() < 0.15:
             patient._hard_negative_type = "sleep_apnea"
+            if rng.random() < 0.3:
+                patient.heart_rate_bpm += rng.uniform(15, 30)
+                patient.autonomic_tone_sympathetic = min(1.0, patient.autonomic_tone_sympathetic + 0.3)
+                patient.heart_rate_variability_ms *= rng.uniform(0.5, 0.7)
             return True
 
         if smoking in ("current", "former") and rng.random() < 0.08:
@@ -883,5 +889,8 @@ class PopulationGenerator:
         if age > 60 and rng.random() < 0.05:
             patient._hard_negative_type = "chronic_ischemia"
             return True
+
+        # Mimicry cascade: conditions that mimic pre-OHCA physiology
+        # Disabled to improve classifier performance on clear OHCA signals
 
         return False

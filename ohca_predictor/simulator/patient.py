@@ -100,6 +100,7 @@ class Medication:
     time_since_dose: float = 0.0
     volume_of_distribution: float = 1.0
     bioavailability: float = 1.0
+    is_active: bool = True
 
     def __post_init__(self) -> None:
         if self.half_life_hours > 0 and self.elimination_rate <= 0:
@@ -458,6 +459,33 @@ class VirtualPatient:
         self.simulation_time_hours: float = 0.0
         self.simulation_time_seconds: float = 0.0
 
+        # Latent cascade for OHCA (replaces direct formula)
+        self._cascade_stage = 0          # 0=stable, 1=subclinical, 2=preclinical, 3=imminent
+        self._cascade_timer = 0.0        # hours spent in current stage
+        self._cascade_thresholds = [     # stochastic crossing thresholds per stage
+            np.random.uniform(0.3, 0.7),  # stage 0->1: must exceed
+            np.random.uniform(0.4, 0.8),  # stage 1->2: must exceed
+            np.random.uniform(0.5, 0.9),  # stage 2->3: must exceed
+        ]
+        self._cascade_noise = np.random.normal(0, 0.05)  # per-patient noise offset
+        self._cascade_memory = np.zeros(5)  # rolling buffer of recent risk scores
+        self._electrical_instability = 0.0   # latent: ventricular excitability
+        self._mechanical_stretch = 0.0       # latent: myocardial wall stress
+        self._metabolic_strain = 0.0         # latent: cellular energy deficit
+
+        # Anatomical variability (affects sensor generation)
+        self.chest_impedance = np.random.uniform(0.6, 1.4)  # body composition affects ECG
+        self.ecg_axis_deviation = np.random.uniform(-30, 30)  # degrees
+        self.skin_melanin_index = np.random.uniform(0.2, 0.8)  # affects PPG SNR
+        self.adipose_thickness = np.random.uniform(0.5, 3.0)  # cm, affects signal attenuation
+        self.sensor_contact_quality = np.random.uniform(0.6, 1.0)  # loose bands, etc.
+
+        # Medication adherence (stochastic non-compliance)
+        self.med_adherence = {}  # drug_name -> adherence_state
+        self._adherence_update_interval = np.random.uniform(12, 48)  # hours between adherence checks
+        self._adherence_timer = 0.0
+        self._recently_stopped = []  # drugs abruptly stopped (rebound risk)
+
         # ---- Initialise sub-models and derived quantities -----------------
         self._initialise_physiology()
 
@@ -593,6 +621,7 @@ class VirtualPatient:
 
         # ---- 5. Medications ----------------------------------------------
         self.apply_medications(dt)
+        self.update_medication_adherence(dt)
 
         # ---- 6. SDE evolution of latent state ----------------------------
         self._evolve_latent_state(dt, activity_state)
@@ -798,6 +827,49 @@ class VirtualPatient:
                 self.heart_rate_bpm -= eff * 5.0
                 self.ejection_fraction += eff * 0.05
 
+    def update_medication_adherence(self, dt_hours: float) -> None:
+        """Simulate stochastic medication non-adherence and abrupt cessations."""
+        self._adherence_timer += dt_hours
+        if self._adherence_timer < self._adherence_update_interval:
+            return
+        self._adherence_timer = 0.0
+        self._adherence_update_interval = np.random.uniform(12, 48)
+        
+        for med in self.medications:
+            if not med.is_active:
+                continue
+            name = med.name
+            if name not in self.med_adherence:
+                self.med_adherence[name] = np.random.uniform(0.85, 1.0)  # baseline adherence
+            
+            # Random dose skipping (5% chance per check)
+            if np.random.random() < 0.05:
+                med.dose_mg *= np.random.uniform(0.0, 0.5)  # missed or partial dose
+            
+            # Abrupt cessation events (1% chance, much rarer)
+            if np.random.random() < 0.01 and name not in self._recently_stopped:
+                med.is_active = False
+                self._recently_stopped.append(name)
+                # Rebound effects based on drug class
+                if 'beta' in name.lower() or 'metoprolol' in name.lower():
+                    self.autonomic_tone_sympathetic = min(1.0, self.autonomic_tone_sympathetic + 0.4)
+                    self.heart_rate_bpm += 25  # rebound tachycardia
+                    self.systolic_bp_mmhg += 30  # hypertensive crisis
+                elif 'lisinopril' in name.lower() or 'ace' in name.lower():
+                    self.systolic_bp_mmhg += 25
+                    self.diastolic_bp_mmhg += 15
+                elif 'furosemide' in name.lower():
+                    self.hydration_level = min(1.0, self.hydration_level + 0.3)
+                    self.blood_potassium_mmol += 1.5  # rebound hyperkalemia
+            
+            # Drug reactivation after a "realization" period (24-72h)
+            for stopped_name in self._recently_stopped[:]:
+                if np.random.random() < 0.02:  # ~50h average to restart
+                    self._recently_stopped.remove(stopped_name)
+                    for m in self.medications:
+                        if m.name == stopped_name:
+                            m.is_active = True
+
     # ======================================================================
     # Latent state SDE evolution
     # ======================================================================
@@ -941,33 +1013,59 @@ class VirtualPatient:
         co_from_hrv = self.heart_rate_bpm * sv_estimated / 1000.0
         self.cardiac_output_lpm = 0.5 * self.cardiac_output_lpm + 0.5 * co_from_hrv
 
-        # ---- Probability of OHCA (logistic risk score) --------------------
-        # Risk factors (each roughly in [-2, +2] range after standardisation)
-        r_ef = -3.0 * max(0.0, 0.45 - self.ejection_fraction)
-        r_k = 1.5 * abs(self.blood_potassium_mmol - 4.0) / 1.5
-        r_ischemia = 3.0 * self.ischemic_burden
-        r_irritability = 2.0 * self.myocardial_irritability
-        r_ans = 1.5 * max(0.0, self.autonomic_nervous_system_balance)
-        r_troponin = 1.0 * max(0.0, (self.troponin_ng_l - 50.0) / 100.0)
-        r_bnp = 0.8 * max(0.0, (self.bnp_pg_ml - 200.0) / 500.0)
-        r_inflammation = 1.0 * self.inflammatory_state
-        r_acidosis = 2.0 * max(0.0, 7.35 - self.blood_ph)
-        r_age = 0.5 * max(0.0, (self.age - 60.0) / 20.0)
-
-        z = (
-            -5.0
-            + r_ef
-            + r_k
-            + r_ischemia
-            + r_irritability
-            + r_ans
-            + r_troponin
-            + r_bnp
-            + r_inflammation
-            + r_acidosis
-            + r_age
+        # Latent cascade: nonlinear multi-variable interaction
+        # Electrical instability: K+ gradient + ischemia + irritability interact
+        k_dep = abs(self.blood_potassium_mmol - 4.0) / 2.0
+        self._electrical_instability = 0.9 * self._electrical_instability + 0.1 * (
+            1.0 / (1.0 + np.exp(-5.0 * (self.myocardial_irritability + k_dep + self.ischemic_burden - 0.6)))
         )
-        self.probability_of_ohca = float(expit(z))
+
+        # Mechanical stretch: EF decline + BP + volume overload
+        ef_deficit = max(0, 0.5 - self.ejection_fraction)
+        bp_strain = max(0, self.systolic_bp_mmhg - 160) / 200.0
+        self._mechanical_stretch = 0.9 * self._mechanical_stretch + 0.1 * (
+            1.0 / (1.0 + np.exp(-4.0 * (ef_deficit + bp_strain + self.bnp_pg_ml / 1000.0 - 0.4)))
+        )
+
+        # Metabolic strain: lactate + pH + troponin with hysteresis lag
+        lactate_strain = max(0, self.lactate_mmol - 2.0) / 8.0
+        acidosis_strain = max(0, 7.4 - self.blood_ph) / 0.4
+        self._metabolic_strain = 0.92 * self._metabolic_strain + 0.08 * (
+            1.0 / (1.0 + np.exp(-6.0 * (lactate_strain + acidosis_strain + self.troponin_ng_l / 500.0 - 0.3)))
+        )
+
+        # Multi-variable nonlinear interaction (NOT a linear combination)
+        # The key: all three must be elevated simultaneously for stage progression
+        interaction_score = (
+            self._electrical_instability * self._mechanical_stretch * 3.0
+            + self._electrical_instability * self._metabolic_strain * 2.5
+            + self._mechanical_stretch * self._metabolic_strain * 2.0
+            + self._electrical_instability + self._mechanical_stretch + self._metabolic_strain
+        ) / 7.0 + self._cascade_noise
+
+        # Update rolling memory buffer
+        self._cascade_memory = np.roll(self._cascade_memory, 1)
+        self._cascade_memory[0] = interaction_score
+
+        # Markov stage transitions with hysteresis
+        stage_score = np.mean(self._cascade_memory[:3])  # smoothed over 3 timesteps
+        if self._cascade_stage < 3:
+            if stage_score > self._cascade_thresholds[self._cascade_stage]:
+                self._cascade_stage += 1
+                self._cascade_timer = 0.0
+        elif self._cascade_stage > 0:
+            if stage_score < self._cascade_thresholds[self._cascade_stage - 1] * 0.7:
+                self._cascade_stage -= 1
+                self._cascade_timer = 0.0
+
+        self._cascade_timer += 1.0 / 3600.0  # assume dt=1s
+
+        # Probability from stage (NOT a clean function)
+        base_probs = [0.001, 0.02, 0.15, 0.70]
+        stage_prob = base_probs[self._cascade_stage]
+        # Add temporal noise within stage
+        time_decay = 1.0 + 0.3 * np.sin(self._cascade_timer * 2.0 * np.pi)
+        self.probability_of_ohca = np.clip(stage_prob * time_decay + np.random.normal(0, 0.01), 0, 1)
 
     # ======================================================================
     # Clamping
@@ -1005,3 +1103,7 @@ class VirtualPatient:
         self.inflammatory_state = float(np.clip(self.inflammatory_state, 0.0, 1.0))
         self.autonomic_nervous_system_balance = float(np.clip(self.autonomic_nervous_system_balance, -1.0, 1.0))
         self.probability_of_ohca = float(np.clip(self.probability_of_ohca, 0.0, 1.0))
+        # Cascade latent variables
+        self._electrical_instability = float(np.clip(getattr(self, '_electrical_instability', 0.0), 0.0, 1.0))
+        self._mechanical_stretch = float(np.clip(getattr(self, '_mechanical_stretch', 0.0), 0.0, 1.0))
+        self._metabolic_strain = float(np.clip(getattr(self, '_metabolic_strain', 0.0), 0.0, 1.0))

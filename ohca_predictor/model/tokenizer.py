@@ -252,7 +252,7 @@ class ECGTokenizer(keras.layers.Layer):
         # Add learned positional encodings
         seq_len = tf.shape(x)[1]
         pos = self.pos_embedding[:, :seq_len, :]
-        x = x + pos
+        x = x + tf.cast(pos, x.dtype)
 
         x = self.token_dropout(x, training=training)
         return x
@@ -368,7 +368,7 @@ class MotionTokenizer(keras.layers.Layer):
         # Add learned positional encodings
         seq_len = tf.shape(x)[1]
         pos = self.pos_embedding[:, :seq_len, :]
-        x = x + pos
+        x = x + tf.cast(pos, x.dtype)
 
         x = self.token_dropout(x, training=training)
         return x
@@ -470,7 +470,7 @@ class PPGTokenizer(keras.layers.Layer):
         # Add learned positional encodings
         seq_len = tf.shape(x)[1]
         pos = self.pos_embedding[:, :seq_len, :]
-        x = x + pos
+        x = x + tf.cast(pos, x.dtype)
 
         x = self.token_dropout(x, training=training)
         return x
@@ -605,18 +605,14 @@ class AuxSignalTokenizer(keras.layers.Layer):
         needs_interp = tf.less(current_len, target_len)
 
         def _do_interp() -> tf.Tensor:
-            # tf.image.resize expects (batch, H, W, C)
-            # Treat current_len as H, 1 as W, C as channels
-            # Input: (batch, current_len, C) → (batch, current_len, 1, C)
             xt = tf.expand_dims(x, axis=2)
             xt = tf.image.resize(
                 xt,
                 size=(target_len, 1),
                 method="bilinear",
             )
-            # (batch, target_len, 1, C) → (batch, target_len, C)
             xt = tf.squeeze(xt, axis=2)
-            return xt
+            return tf.cast(xt, x.dtype)
 
         def _no_interp() -> tf.Tensor:
             return x
@@ -691,7 +687,7 @@ class AuxSignalTokenizer(keras.layers.Layer):
         # Add learned positional encodings
         seq_len = tf.shape(x)[1]
         pos = self.pos_embedding[:, :seq_len, :]
-        x = x + pos
+        x = x + tf.cast(pos, x.dtype)
 
         x = self.token_dropout(x, training=training)
         return x

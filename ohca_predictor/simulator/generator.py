@@ -92,6 +92,12 @@ class DataGenerator:
             config, self.sensor_rng,
         )
 
+        self._troponin_debt = 0.0
+        self._lactate_debt = 0.0
+        self._bnp_debt = 0.0
+        self._ph_buffer = []
+        self._lag_time_constant = np.random.uniform(2.0, 6.0)
+
     # ======================================================================
     # Main generation method
     # ======================================================================
@@ -357,6 +363,25 @@ class DataGenerator:
             time_hours=start_hours,
         )
 
+        # Multi-sensor modality desynchronization (clock drift, async sampling)
+        ppg_fs = self.sampling_rates.get("ppg_hz", 50.0)
+        if 'ecg' in result and 'ppg' in result:
+            ppg_shift_ms = np.random.uniform(-50, 50)
+            ppg_shift_samples = int(ppg_shift_ms / 1000.0 * ppg_fs)
+            if ppg_shift_samples > 0:
+                result['ppg'] = np.pad(result['ppg'], (ppg_shift_samples, 0))[:-ppg_shift_samples]
+            elif ppg_shift_samples < 0:
+                result['ppg'] = np.pad(result['ppg'], (0, -ppg_shift_samples))[-ppg_shift_samples:]
+
+            if np.random.random() < 0.02:
+                drop_modality = np.random.choice(['ppg', 'spo2'])
+                if drop_modality in result:
+                    n = len(result[drop_modality])
+                    drop_start = np.random.randint(0, max(1, n - n//10))
+                    drop_len = np.random.randint(n//20, n//5)
+                    result[drop_modality] = result[drop_modality].copy()
+                    result[drop_modality][drop_start:drop_start+drop_len] = 0.0
+
         return {
             "ecg": result["ecg"],
             "accelerometer": result["accelerometer"].T,
@@ -417,66 +442,215 @@ class DataGenerator:
         time_to_ohca = getattr(patient, "time_to_ohca_hours", None)
         if time_to_ohca is not None and time_to_ohca > 0:
             hours_remaining = time_to_ohca - current_hours
-            if hours_remaining > 0 and hours_remaining < 48.0:
-                # Progressive deterioration: severity increases as OHCA approaches
-                deterioration = max(0.0, 1.0 - (hours_remaining / 48.0))
-                severity = getattr(patient, "_ohca_severity", 1.0) * deterioration
+            if hours_remaining > 0 and hours_remaining < 72.0:
+                # Multi-phase clinical deterioration model
+                # Phase 1 (72-24h): subtle changes - reduced HRV, mild tachycardia
+                # Phase 2 (24-6h): progressive - HR up, BP down, SpO2 fluctuating
+                # Phase 3 (6-2h): accelerated - troponin rising, EF dropping
+                # Phase 4 (2-0h): critical - hemodynamic collapse, arrhythmias
 
-                # HR: increase toward dangerous levels
-                hr_increase = severity * 40.0  # Up to 40 bpm increase
-                patient.heart_rate_bpm = min(180.0, patient.heart_rate_bpm + hr_increase * dt_hours * 0.5)
+                if hours_remaining > 24.0:
+                    # Phase 1: Subtle sympathoactivation
+                    deterioration = max(0.0, 1.0 - (hours_remaining / 72.0))
+                    severity = getattr(patient, "_ohca_severity", 1.0) * deterioration * 0.4
 
-                # HRV: decrease (sympathetic overdrive)
-                patient.heart_rate_variability_ms = max(
-                    5.0, patient.heart_rate_variability_ms * (1.0 - severity * 0.3 * dt_hours)
-                )
+                    # Mild HR increase (sympathetic tone) -- amplified for learnability
+                    hr_increase = severity * 20.0 * dt_hours * 0.4
+                    patient.heart_rate_bpm = min(115.0, patient.heart_rate_bpm + hr_increase)
 
-                # BP: drop (hemodynamic instability)
-                bp_drop = severity * 30.0 * dt_hours * 0.3
-                patient.systolic_bp_mmhg = max(60.0, patient.systolic_bp_mmhg - bp_drop)
-                patient.diastolic_bp_mmhg = max(30.0, patient.diastolic_bp_mmhg - bp_drop * 0.6)
+                    # Subtle HRV reduction -- amplified
+                    patient.heart_rate_variability_ms = max(
+                        18.0, patient.heart_rate_variability_ms * (1.0 - severity * 0.15 * dt_hours)
+                    )
 
-                # SpO2: decline
-                spo2_drop = severity * 8.0 * dt_hours * 0.2
-                patient.spo2_percent = max(80.0, patient.spo2_percent - spo2_drop)
+                    # Troponin: stress debt accumulates before spillover (DDE)
+                    stress_input = severity * 0.5 * (1.0 - patient.ejection_fraction + patient.ischemic_burden)
+                    self._troponin_debt += stress_input * dt_hours
+                    if self._troponin_debt > 0.1:
+                        spillover = self._troponin_debt * (1.0 - np.exp(-dt_hours / (self._lag_time_constant * 0.5)))
+                        patient.troponin_ng_l += spillover
+                        self._troponin_debt -= spillover * 0.3
+                    patient.troponin_ng_l = float(np.clip(patient.troponin_ng_l, 0, 1000))
 
-                # Troponin: rise (myocardial injury)
-                patient.troponin_ng_l = min(
-                    500.0, patient.troponin_ng_l + severity * 50.0 * dt_hours * 0.5
-                )
+                elif hours_remaining > 6.0:
+                    # Phase 2: Progressive deterioration
+                    deterioration = max(0.0, 1.0 - (hours_remaining / 24.0))
+                    severity = getattr(patient, "_ohca_severity", 1.0) * deterioration
 
-                # Lactate: rise (metabolic acidosis)
-                patient.lactate_mmol = min(
-                    15.0, patient.lactate_mmol + severity * 3.0 * dt_hours * 0.3
-                )
+                    # Moderate HR increase -- amplified for learnability
+                    hr_increase = severity * 35.0 * dt_hours * 0.6
+                    patient.heart_rate_bpm = min(145.0, patient.heart_rate_bpm + hr_increase)
 
-                # BNP: rise (cardiac stress)
-                patient.bnp_pg_ml = min(
-                    5000.0, patient.bnp_pg_ml + severity * 200.0 * dt_hours * 0.4
-                )
+                    # HRV continues to drop (sympathetic overdrive) -- amplified
+                    patient.heart_rate_variability_ms = max(
+                        8.0, patient.heart_rate_variability_ms * (1.0 - severity * 0.30 * dt_hours)
+                    )
 
-                # Myocardial irritability: increase
-                patient.myocardial_irritability = min(
-                    1.0, patient.myocardial_irritability + severity * 0.2 * dt_hours
-                )
+                    # BP starts dropping
+                    bp_drop = severity * 20.0 * dt_hours * 0.4
+                    patient.systolic_bp_mmhg = max(75.0, patient.systolic_bp_mmhg - bp_drop)
+                    patient.diastolic_bp_mmhg = max(35.0, patient.diastolic_bp_mmhg - bp_drop * 0.5)
 
-                # EF: decrease
-                patient.ejection_fraction = max(
-                    0.10, patient.ejection_fraction - severity * 0.15 * dt_hours * 0.3
-                )
+                    # SpO2 fluctuating
+                    spo2_drop = severity * 4.0 * dt_hours * 0.3
+                    patient.spo2_percent = max(85.0, patient.spo2_percent - spo2_drop)
 
-                # Ischemic burden: increase
-                patient.ischemic_burden = min(
-                    1.0, patient.ischemic_burden + severity * 0.3 * dt_hours * 0.2
-                )
+                    # Troponin: stress debt accumulates before spillover (DDE)
+                    stress_input = severity * 0.5 * (1.0 - patient.ejection_fraction + patient.ischemic_burden)
+                    self._troponin_debt += stress_input * dt_hours
+                    if self._troponin_debt > 0.1:
+                        spillover = self._troponin_debt * (1.0 - np.exp(-dt_hours / (self._lag_time_constant * 0.5)))
+                        patient.troponin_ng_l += spillover
+                        self._troponin_debt -= spillover * 0.3
+                    patient.troponin_ng_l = float(np.clip(patient.troponin_ng_l, 0, 1000))
 
-                # pH: drop (acidosis)
-                patient.blood_ph = max(7.0, patient.blood_ph - severity * 0.1 * dt_hours * 0.1)
+                    # Myocardial irritability increasing
+                    patient.myocardial_irritability = min(
+                        0.7, patient.myocardial_irritability + severity * 0.15 * dt_hours
+                    )
 
-                # Respiratory rate: increase (compensatory)
-                patient.respiratory_rate_bpm = min(
-                    40.0, patient.respiratory_rate_bpm + severity * 5.0 * dt_hours * 0.2
-                )
+                elif hours_remaining > 2.0:
+                    # Phase 3: Accelerated deterioration
+                    deterioration = max(0.0, 1.0 - (hours_remaining / 6.0))
+                    severity = getattr(patient, "_ohca_severity", 1.0) * deterioration
+
+                    # Tachycardia → possible bradycardia transition
+                    hr_change = severity * 40.0 * dt_hours * 0.5
+                    if hours_remaining > 3.0:
+                        patient.heart_rate_bpm = min(160.0, patient.heart_rate_bpm + hr_change)
+                    else:
+                        # Start bradycardic trend
+                        patient.heart_rate_bpm = max(35.0, patient.heart_rate_bpm - hr_change * 0.3)
+
+                    # Severe HRV loss
+                    patient.heart_rate_variability_ms = max(
+                        5.0, patient.heart_rate_variability_ms * (1.0 - severity * 0.4 * dt_hours)
+                    )
+
+                    # Hemodynamic instability
+                    bp_drop = severity * 25.0 * dt_hours * 0.5
+                    patient.systolic_bp_mmhg = max(60.0, patient.systolic_bp_mmhg - bp_drop)
+                    patient.diastolic_bp_mmhg = max(30.0, patient.diastolic_bp_mmhg - bp_drop * 0.6)
+
+                    # Significant SpO2 decline
+                    spo2_drop = severity * 6.0 * dt_hours * 0.4
+                    patient.spo2_percent = max(82.0, patient.spo2_percent - spo2_drop)
+
+                    # Troponin: stress debt accumulates before spillover (DDE)
+                    stress_input = severity * 0.5 * (1.0 - patient.ejection_fraction + patient.ischemic_burden)
+                    self._troponin_debt += stress_input * dt_hours
+                    if self._troponin_debt > 0.1:
+                        spillover = self._troponin_debt * (1.0 - np.exp(-dt_hours / (self._lag_time_constant * 0.5)))
+                        patient.troponin_ng_l += spillover
+                        self._troponin_debt -= spillover * 0.3
+                    patient.troponin_ng_l = float(np.clip(patient.troponin_ng_l, 0, 1000))
+
+                    # Lactate: metabolic debt with delayed accumulation
+                    metabolic_input = severity * 0.3 * (1.0 + patient.myocardial_irritability)
+                    self._lactate_debt += metabolic_input * dt_hours
+                    if self._lactate_debt > 0.05:
+                        spillover_l = self._lactate_debt * (1.0 - np.exp(-dt_hours / self._lag_time_constant))
+                        patient.lactate_mmol += spillover_l
+                        self._lactate_debt -= spillover_l * 0.2
+                    patient.lactate_mmol = float(np.clip(patient.lactate_mmol, 0.5, 20))
+
+                    # BNP: wall stress debt
+                    wall_stress_input = severity * 0.4 * (1.0 - patient.ejection_fraction)
+                    self._bnp_debt += wall_stress_input * dt_hours
+                    if self._bnp_debt > 0.08:
+                        spillover_b = self._bnp_debt * (1.0 - np.exp(-dt_hours / (self._lag_time_constant * 1.5)))
+                        patient.bnp_pg_ml += spillover_b
+                        self._bnp_debt -= spillover_b * 0.25
+                    patient.bnp_pg_ml = float(np.clip(patient.bnp_pg_ml, 0, 5000))
+
+                    # Myocardial irritability high
+                    patient.myocardial_irritability = min(
+                        0.9, patient.myocardial_irritability + severity * 0.2 * dt_hours
+                    )
+
+                    # EF dropping
+                    patient.ejection_fraction = max(
+                        0.15, patient.ejection_fraction - severity * 0.1 * dt_hours * 0.5
+                    )
+
+                    # Ischemic burden increasing
+                    patient.ischemic_burden = min(
+                        0.8, patient.ischemic_burden + severity * 0.2 * dt_hours * 0.3
+                    )
+
+                    # pH: buffered lag (acidosis doesn't appear immediately)
+                    acid_input = max(0, patient.lactate_mmol - 2.0) * 0.002
+                    self._ph_buffer.append(acid_input)
+                    if len(self._ph_buffer) > int(3600 / max(1, dt_hours * 3600)):
+                        self._ph_buffer.pop(0)
+                    avg_acid = np.mean(self._ph_buffer) if self._ph_buffer else 0
+                    patient.blood_ph = 7.4 - avg_acid * severity
+                    patient.blood_ph = float(np.clip(patient.blood_ph, 6.8, 7.6))
+
+                    # Respiratory rate increasing (compensatory)
+                    patient.respiratory_rate_bpm = min(
+                        35.0, patient.respiratory_rate_bpm + severity * 3.0 * dt_hours * 0.3
+                    )
+
+                else:
+                    # Phase 4: Terminal - hemodynamic collapse
+                    deterioration = max(0.0, 1.0 - (hours_remaining / 2.0))
+                    severity = getattr(patient, "_ohca_severity", 1.0) * deterioration
+
+                    # Bradycardia → asystole trajectory
+                    hr_drop = severity * 50.0 * dt_hours
+                    patient.heart_rate_bpm = max(25.0, patient.heart_rate_bpm - hr_drop)
+
+                    # Near-complete HRV loss
+                    patient.heart_rate_variability_ms = max(
+                        2.0, patient.heart_rate_variability_ms * 0.8
+                    )
+
+                    # Circulatory collapse
+                    bp_drop = severity * 40.0 * dt_hours * 0.8
+                    patient.systolic_bp_mmhg = max(40.0, patient.systolic_bp_mmhg - bp_drop)
+                    patient.diastolic_bp_mmhg = max(20.0, patient.diastolic_bp_mmhg - bp_drop * 0.5)
+
+                    # Severe hypoxemia
+                    spo2_drop = severity * 10.0 * dt_hours * 0.6
+                    patient.spo2_percent = max(60.0, patient.spo2_percent - spo2_drop)
+
+                    # Troponin: stress debt accumulates before spillover (DDE)
+                    stress_input = severity * 0.5 * (1.0 - patient.ejection_fraction + patient.ischemic_burden)
+                    self._troponin_debt += stress_input * dt_hours
+                    if self._troponin_debt > 0.1:
+                        spillover = self._troponin_debt * (1.0 - np.exp(-dt_hours / (self._lag_time_constant * 0.5)))
+                        patient.troponin_ng_l += spillover
+                        self._troponin_debt -= spillover * 0.3
+                    patient.troponin_ng_l = float(np.clip(patient.troponin_ng_l, 0, 1000))
+
+                    # Lactate: metabolic debt with delayed accumulation
+                    metabolic_input = severity * 0.3 * (1.0 + patient.myocardial_irritability)
+                    self._lactate_debt += metabolic_input * dt_hours
+                    if self._lactate_debt > 0.05:
+                        spillover_l = self._lactate_debt * (1.0 - np.exp(-dt_hours / self._lag_time_constant))
+                        patient.lactate_mmol += spillover_l
+                        self._lactate_debt -= spillover_l * 0.2
+                    patient.lactate_mmol = float(np.clip(patient.lactate_mmol, 0.5, 20))
+
+                    # pH: buffered lag (acidosis doesn't appear immediately)
+                    acid_input = max(0, patient.lactate_mmol - 2.0) * 0.002
+                    self._ph_buffer.append(acid_input)
+                    if len(self._ph_buffer) > int(3600 / max(1, dt_hours * 3600)):
+                        self._ph_buffer.pop(0)
+                    avg_acid = np.mean(self._ph_buffer) if self._ph_buffer else 0
+                    patient.blood_ph = 7.4 - avg_acid * severity
+                    patient.blood_ph = float(np.clip(patient.blood_ph, 6.8, 7.6))
+
+                    # Myocardial irritability maximal
+                    patient.myocardial_irritability = min(
+                        1.0, patient.myocardial_irritability + severity * 0.3 * dt_hours
+                    )
+
+                    # EF critically low
+                    patient.ejection_fraction = max(
+                        0.08, patient.ejection_fraction - severity * 0.15 * dt_hours * 0.5
+                    )
 
         # Standard physiology update
         patient.update_physiology(
@@ -883,8 +1057,16 @@ class DataGenerator:
     def _get_rhythm_at_time(
         self, patient: VirtualPatient, time_hours: float,
     ) -> int:
-        """Determine cardiac rhythm at a given time."""
+        """Determine cardiac rhythm at a given time with realistic arrhythmia progression.
+
+        Models the clinical trajectory toward OHCA:
+        1. Stable period: sinus rhythm (possibly AF if underlying disease)
+        2. Pre-arrest (6-2h before): increasing PVC burden, occasional couplets
+        3. Imminent (2-0h before): frequent PVCs, non-sustained VT runs
+        4. Terminal: sustained VT or VF
+        """
         active = getattr(patient, "active_diseases", [])
+        time_to_ohca = getattr(patient, "time_to_ohca_hours", None)
 
         active_strs = []
         for d in active:
@@ -893,11 +1075,46 @@ class DataGenerator:
             elif isinstance(d, DiseaseType):
                 active_strs.append(d.value)
 
-        if "vf" in active_strs:
+        # If patient already has a chronic arrhythmia, use that as baseline
+        has_af = "af" in active_strs
+        has_vt = "vt" in active_strs
+        has_vf = "vf" in active_strs
+
+        # For OHCA patients, model progressive arrhythmia deterioration
+        if time_to_ohca is not None and time_to_ohca > 0:
+            hours_remaining = time_to_ohca - time_hours
+            if hours_remaining > 0:
+                # Use seeded random for reproducible progression per patient
+                seed = hash(patient.patient_id) % (2**31)
+                rng = np.random.default_rng(seed + int(time_hours * 3600))
+
+                if hours_remaining > 6.0:
+                    # Stable period: mostly sinus, occasional PVCs (rhythm stays sinus)
+                    return RHYTHM_MAP["af"] if has_af else RHYTHM_MAP["sinus"]
+                elif hours_remaining > 2.0:
+                    # Pre-arrest: PVC burden increasing
+                    # Probability of VT run increases as OHCA approaches
+                    p_vt = 0.05 * (1.0 - hours_remaining / 6.0)
+                    if rng.random() < p_vt:
+                        return RHYTHM_MAP["vt"]
+                    return RHYTHM_MAP["af"] if has_af else RHYTHM_MAP["sinus"]
+                else:
+                    # Imminent: high probability of VT, some already in VF
+                    p_vf = 0.3 * (1.0 - hours_remaining / 2.0)
+                    p_vt = 0.5 * (1.0 - hours_remaining / 2.0)
+                    r = rng.random()
+                    if r < p_vf:
+                        return RHYTHM_MAP["vf"]
+                    elif r < p_vf + p_vt:
+                        return RHYTHM_MAP["vt"]
+                    return RHYTHM_MAP["af"] if has_af else RHYTHM_MAP["sinus"]
+
+        # Non-OHCA patients: use their disease-driven rhythm
+        if has_vf:
             return RHYTHM_MAP["vf"]
-        if "vt" in active_strs:
+        if has_vt:
             return RHYTHM_MAP["vt"]
-        if "af" in active_strs:
+        if has_af:
             return RHYTHM_MAP["af"]
 
         return RHYTHM_MAP["sinus"]

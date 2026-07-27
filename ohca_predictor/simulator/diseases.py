@@ -2121,6 +2121,7 @@ class DiseaseInteractionManager:
         self.comorbidity_probability: float = self.disease_config.comorbidity_probability
         self.active_diseases: Dict[DiseaseType, DiseaseState] = {}
         self.interaction_events: List[DiseaseEvent] = []
+        self._disease_models = {}  # populated externally
 
     def select_comorbidities(self, primary_disease: DiseaseType, patient_state: Dict[str, Any]) -> List[DiseaseType]:
         """Stochastically select comorbid diseases given a primary disease."""
@@ -2192,15 +2193,48 @@ class DiseaseInteractionManager:
                 selected.append(dtype)
         return selected
 
-    def compute_interaction_multiplier(self, disease_a: DiseaseType, disease_b: DiseaseType) -> float:
-        """Return the risk multiplier for a pair of active diseases."""
-        key = (disease_a, disease_b)
-        key_rev = (disease_b, disease_a)
-        if key in self.PAIRWISE_INTERACTIONS:
-            return self.PAIRWISE_INTERACTIONS[key]
-        if key_rev in self.PAIRWISE_INTERACTIONS:
-            return self.PAIRWISE_INTERACTIONS[key_rev]
-        return 1.0
+    def compute_interaction_multiplier(self, disease_a: DiseaseType, disease_b: DiseaseType,
+                                         patient_state: dict) -> float:
+        """Dynamic bidirectional multiplier based on current physiological state."""
+        # Static baseline interaction (clinical literature)
+        BASELINE_INTERACTIONS = {
+            (DiseaseType.STEMI, DiseaseType.HYPERKALEMIA): 1.5,
+            (DiseaseType.LQTS, DiseaseType.DRUG_TOXICITY): 1.6,
+            (DiseaseType.DCM, DiseaseType.AF): 1.4,
+            (DiseaseType.HCM, DiseaseType.VT): 1.5,
+            (DiseaseType.BRUGADA, DiseaseType.FEVER): 1.3,
+            (DiseaseType.SEPSIS, DiseaseType.RESPIRATORY_FAILURE): 1.4,
+            (DiseaseType.PE, DiseaseType.RESPIRATORY_FAILURE): 1.5,
+            (DiseaseType.VF, DiseaseType.HYPERKALEMIA): 1.8,
+            (DiseaseType.NSTEMI, DiseaseType.DCM): 1.3,
+            (DiseaseType.ARV, DiseaseType.VT): 1.6,
+        }
+
+        key = tuple(sorted([disease_a, disease_b], key=lambda x: x.value))
+        baseline = BASELINE_INTERACTIONS.get(key, 1.0)
+
+        # Dynamic amplification based on physiological state
+        ef = patient_state.get('ejection_fraction', 0.5)
+        k = patient_state.get('potassium', 4.0)
+        ir = patient_state.get('myocardial_irritability', 0.1)
+        ib = patient_state.get('ischemic_burden', 0.0)
+        symp = patient_state.get('sympathetic_tone', 0.3)
+
+        # When EF is already low, disease interactions amplify more
+        ef_multiplier = 1.0 + max(0, 0.4 - ef) * 3.0
+
+        # When K+ is abnormal, interaction effects are nonlinear
+        k_multiplier = 1.0 + max(0, abs(k - 4.0) - 0.5) * 2.0
+
+        # Sympathetic surge amplifies all interactions
+        symp_multiplier = 1.0 + max(0, symp - 0.6) * 2.5
+
+        # Ischemic burden creates substrate for arrhythmia
+        ischemia_multiplier = 1.0 + ib * 1.5
+
+        dynamic_factor = ef_multiplier * k_multiplier * symp_multiplier * ischemia_multiplier
+
+        return baseline * min(dynamic_factor, 5.0)  # cap at 5x
 
     def compute_drug_interaction_multiplier(self, drug_a: str, drug_b: str) -> float:
         """Return the toxicity multiplier for a pair of co-administered drugs."""
@@ -2212,31 +2246,98 @@ class DiseaseInteractionManager:
             return self.DRUG_INTERACTIONS[key_rev]
         return 1.0
 
-    def compute_emergent_risk(self, collapse_risk: float) -> float:
+    def compute_emergent_risk(self, patient_state: dict, dt: float) -> float:
+        """Non-linear emergent risk from multi-disease interactions.
+
+        Instead of multiplying static multipliers, this models how diseases
+        dynamically alter the core physiological parameters and how the
+        downstream system reacts to the organic strain.
         """
-        Compute emergent risk from the interaction of all active diseases.
+        if len(self.active_diseases) < 2:
+            return 0.0
 
-        The emergent risk is NOT simply the sum of individual risks.
-        Interactions create non-linear amplification of collapse probability.
-        """
-        n_active = sum(1 for ds in self.active_diseases.values() if ds.is_active)
-        if n_active < 2:
-            return collapse_risk
+        # Compute pairwise dynamic interactions
+        total_interaction = 0.0
+        n_pairs = 0
+        active_disease_list = [dt for dt, ds in self.active_diseases.items() if ds.is_active]
+        for i, d_a in enumerate(active_disease_list):
+            for d_b in active_disease_list[i+1:]:
+                mult = self.compute_interaction_multiplier(d_a, d_b, patient_state)
+                total_interaction += (mult - 1.0)  # excess risk above baseline
+                n_pairs += 1
 
-        interaction_multiplier = 1.0
-        disease_list = [dt for dt, ds in self.active_diseases.items() if ds.is_active]
-        for i in range(len(disease_list)):
-            for j in range(i + 1, len(disease_list)):
-                pair_mult = self.compute_interaction_multiplier(disease_list[i], disease_list[j])
-                if pair_mult > 1.0:
-                    interaction_multiplier *= pair_mult
+        if n_pairs == 0:
+            return 0.0
 
-        interaction_multiplier = min(interaction_multiplier, 3.0)
+        avg_excess = total_interaction / n_pairs
 
-        synergistic_bonus = 0.01 * max(0, n_active - 1) ** 1.5
+        # Synergistic amplification (super-linear for 3+ diseases)
+        n_diseases = len(active_disease_list)
+        synergy = 0.0
+        if n_diseases >= 3:
+            synergy = 0.05 * (n_diseases - 2) ** 1.8
 
-        emergent = collapse_risk * interaction_multiplier + synergistic_bonus
-        return float(np.clip(emergent, 0.0, 1.0))
+        # Feedback: if patient_state already shows strain, interactions are worse
+        current_risk = patient_state.get('probability_of_ohca', 0.0)
+        strain_feedback = 1.0 + current_risk * 2.0
+
+        emergent = (avg_excess * n_pairs * 0.3 + synergy) * strain_feedback
+        return min(emergent, 2.0)  # cap emergent risk contribution
+
+    def apply_bidirectional_effects(self, patient_state: dict, dt: float) -> dict:
+        """Let diseases dynamically alter core physiological parameters,
+        and let the downstream system react to the strain organically."""
+        modified = dict(patient_state)
+
+        for disease_type in self.active_diseases:
+            model = self._disease_models.get(disease_type)
+            if model is None:
+                continue
+
+            # Each disease modifies core params based on severity
+            severity = getattr(model, 'severity', 0.5)
+
+            if disease_type in (DiseaseType.STEMI, DiseaseType.NSTEMI, DiseaseType.UNSTABLE_ANGINA):
+                # Ischemia -> reduced EF, increased irritability, metabolic strain
+                modified['ejection_fraction'] = modified.get('ejection_fraction', 0.5) - severity * 0.02 * dt
+                modified['myocardial_irritability'] = min(1.0, modified.get('myocardial_irritability', 0.1) + severity * 0.01 * dt)
+                modified['ischemic_burden'] = min(1.0, modified.get('ischemic_burden', 0.0) + severity * 0.005 * dt)
+                modified['lactate'] = modified.get('lactate', 1.0) + severity * 0.002 * dt
+
+            elif disease_type == DiseaseType.DCM:
+                # Low EF -> compensatory sympathetic activation -> reduced HRV
+                modified['ejection_fraction'] = modified.get('ejection_fraction', 0.5) - severity * 0.01 * dt
+                modified['sympathetic_tone'] = min(1.0, modified.get('sympathetic_tone', 0.3) + severity * 0.005 * dt)
+                modified['hrv_total'] = max(10, modified.get('hrv_total', 50) - severity * 0.5 * dt)
+
+            elif disease_type in (DiseaseType.HYPERKALEMIA, DiseaseType.HYPOKALEMIA):
+                # Electrolyte disturbance -> conduction abnormalities -> arrhythmia substrate
+                modified['myocardial_irritability'] = min(1.0, modified.get('myocardial_irritability', 0.1) + severity * 0.015 * dt)
+                modified['sympathetic_tone'] = min(1.0, modified.get('sympathetic_tone', 0.3) + severity * 0.008 * dt)
+
+            elif disease_type in (DiseaseType.VT, DiseaseType.VF):
+                # Active arrhythmia -> hemodynamic collapse
+                modified['cardiac_output'] = modified.get('cardiac_output', 5.0) * (1.0 - severity * 0.3)
+                modified['systolic_bp'] = modified.get('systolic_bp', 120) * (1.0 - severity * 0.2)
+                modified['sympathetic_tone'] = min(1.0, modified.get('sympathetic_tone', 0.3) + severity * 0.02 * dt)
+
+            elif disease_type == DiseaseType.SEPSIS:
+                # Systemic inflammation -> vasodilation -> metabolic acidosis
+                modified['systolic_bp'] = modified.get('systolic_bp', 120) * (1.0 - severity * 0.05 * dt)
+                modified['lactate'] = modified.get('lactate', 1.0) + severity * 0.01 * dt
+                modified['ph'] = max(6.8, modified.get('ph', 7.4) - severity * 0.002 * dt)
+                modified['inflammatory_state'] = min(1.0, modified.get('inflammatory_state', 0.2) + severity * 0.01 * dt)
+
+            elif disease_type == DiseaseType.RESPIRATORY_FAILURE:
+                modified['spo2'] = max(0.7, modified.get('spo2', 0.98) - severity * 0.005 * dt)
+                modified['respiratory_rate'] = modified.get('respiratory_rate', 16) + severity * 4
+
+            elif disease_type == DiseaseType.AF:
+                # AF -> reduced CO -> compensatory HR increase
+                modified['cardiac_output'] = modified.get('cardiac_output', 5.0) * (1.0 - severity * 0.15)
+                modified['heart_rate'] = modified.get('heart_rate', 70) + severity * 20
+
+        return modified
 
     def update(self, dt: float, current_time: float, patient_state: Dict[str, Any]) -> Dict[str, Any]:
         """Run one update cycle for the interaction manager."""
@@ -2247,7 +2348,7 @@ class DiseaseInteractionManager:
         disease_list = [dt for dt, ds in self.active_diseases.items() if ds.is_active]
         for i in range(len(disease_list)):
             for j in range(i + 1, len(disease_list)):
-                mult = self.compute_interaction_multiplier(disease_list[i], disease_list[j])
+                mult = self.compute_interaction_multiplier(disease_list[i], disease_list[j], patient_state)
                 if mult > 1.0:
                     for dt_key in [disease_list[i], disease_list[j]]:
                         ds = self.active_diseases[dt_key]
@@ -2256,10 +2357,10 @@ class DiseaseInteractionManager:
                             ds.probability_of_collapse * (1.0 + (mult - 1.0) * 0.005 * dt), 0.0, 1.0,
                         ))
 
+        emergent = self.compute_emergent_risk(patient_state, dt)
         base_risk = patient_state.get("collapse_risk", 0.0)
-        emergent = self.compute_emergent_risk(base_risk)
         patient_state["emergent_interaction_risk"] = emergent
-        patient_state["collapse_risk"] = max(base_risk, emergent)
+        patient_state["collapse_risk"] = max(base_risk, base_risk + emergent)
 
         return patient_state
 

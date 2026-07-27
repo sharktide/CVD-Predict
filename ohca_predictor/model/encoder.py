@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Tuple
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
@@ -131,11 +132,13 @@ class _MultiHeadSelfAttentionALiBi(keras.layers.Layer):
 
         self.attention_dropout_layer = keras.layers.Dropout(self.attention_dropout)
 
-        # Pre-compute full ALiBi bias matrix (will be sliced per sequence length)
-        self.alibi_bias = tf.constant(
-            _build_alibi_bias(self.num_heads, self.max_seq_len),
-            dtype=self.compute_dtype,
-        )
+        # Cache slopes for ALiBi (small, reusable across all sequence lengths)
+        # Store as numpy to avoid tf.constant scope issues in tf.function tracing
+        slopes = []
+        for h in range(1, self.num_heads + 1):
+            slope = 2.0 ** (-8.0 * h / self.num_heads)
+            slopes.append(slope)
+        self._alibi_slopes_np = np.array(slopes, dtype=np.float32)  # (num_heads,)
 
         super().build(input_shape)
 
@@ -182,8 +185,14 @@ class _MultiHeadSelfAttentionALiBi(keras.layers.Layer):
         # q, k: (batch, num_heads, seq_len, head_dim)
         attn_scores = tf.matmul(q, k, transpose_b=True) * self.scale
 
-        # Add ALiBi bias (slice to current sequence length)
-        alibi = _get_alibi_bias_for_seq_len(self.alibi_bias, seq_len)
+        # Add ALiBi bias (compute dynamically for actual seq_len)
+        positions = tf.range(seq_len, dtype=tf.float32)
+        relative_positions = tf.abs(
+            tf.expand_dims(positions, axis=1) - tf.expand_dims(positions, axis=0)
+        )  # (seq_len, seq_len)
+        alibi = -tf.reshape(self._alibi_slopes_np, (-1, 1, 1)) * tf.expand_dims(
+            relative_positions, axis=0
+        )  # (num_heads, seq_len, seq_len)
         # alibi: (num_heads, seq_len, seq_len) → broadcast over batch
         attn_scores = attn_scores + tf.cast(alibi, dtype=attn_scores.dtype)
 
@@ -542,14 +551,9 @@ class TransformerEncoder(keras.layers.Layer):
         Returns:
             Encoded sequence of shape (batch, seq_len, model_dim).
         """
-        if training:
-            encoded = tf.recompute_grad(
-                self._encoder_forward
-            )(inputs, training=training, attention_mask=attention_mask)
-        else:
-            encoded = self._encoder_forward(
-                inputs, training=training, attention_mask=attention_mask
-            )
+        encoded = self._encoder_forward(
+            inputs, training=training, attention_mask=attention_mask
+        )
         return encoded
 
     def get_config(self) -> Dict:

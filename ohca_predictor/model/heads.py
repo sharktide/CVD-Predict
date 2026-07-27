@@ -339,6 +339,7 @@ class UncertaintyHead(keras.layers.Layer):
             - sigma: predicted standard deviation (aleatoric + epistemic).
         """
         mu, log_sigma = self._predict_mu_log_sigma(sequence, training=training)
+        log_sigma = tf.clip_by_value(log_sigma, -5.0, 3.0)
         sigma = tf.exp(log_sigma)
 
         if training:

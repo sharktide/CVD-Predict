@@ -475,16 +475,45 @@ class ECGSensor:
         ecg = np.zeros(n_samples)
         theta = self.rng.uniform(0, _PI2)
         z = z0
+        theta_history = np.zeros(n_samples)
+        ectopic_countdown = 0
 
         for i in range(n_samples):
+            if ectopic_countdown > 0:
+                waves_use = {k: _WaveParams(v.a, v.b, v.theta0) for k, v in waves.items()}
+                waves_use["S"].a *= 2.5
+                waves_use["S"].b *= 1.8
+                waves_use["T"].a *= 0.3
+                ectopic_countdown -= 1
+            else:
+                waves_use = waves
+
+            if np.random.random() < 0.003:
+                theta = theta * 0.5
+                waves_use = {k: _WaveParams(v.a, v.b, v.theta0) for k, v in waves.items()}
+                waves_use["S"].a *= 2.5
+                waves_use["S"].b *= 1.8
+                waves_use["T"].a *= 0.3
+                ectopic_countdown = 20
+
             omega_i = omega_full[i]
-            # Euler step (dt = 1/fs)
             dt_step = 1.0 / fs
-            dy = self._mcsharry_ode(0.0, np.array([theta, z]), omega_i, waves, z0)
+            dy = self._mcsharry_ode(0.0, np.array([theta, z]), omega_i, waves_use, z0)
             theta = theta + dy[0] * dt_step
             z = z + dy[1] * dt_step
             theta = _wrap_phase(theta)
             ecg[i] = z
+            theta_history[i] = theta
+
+            chaos_scale = 0.002 + 0.008 * (heart_rate_bpm / 180.0)
+            theta += chaos_scale * np.sin(theta * 3.7 + theta_history[max(0, i-1)] * 2.3 + theta_history[max(0, i-5)] * 1.1)
+            theta = _wrap_phase(theta)
+
+            beat_phase = theta % (2 * np.pi)
+            if beat_phase < 0.1 and theta_history[i] > theta_history[max(0, i-1)]:
+                for wp in waves.values():
+                    wp.a *= (1.0 + np.random.normal(0, 0.03))
+                    wp.b *= (1.0 + np.random.normal(0, 0.04))
 
         # --- Demographic waveform shaping ---
         age = patient_state.get("age", 40)
@@ -1472,19 +1501,82 @@ class SensorArtifactModel:
         clip_level = threshold * vref / 2.0
         return np.clip(signal_arr, -clip_level, clip_level)
 
+    def _bandpass(self, sig, low, high, fs):
+        from scipy.signal import butter, filtfilt
+        nyq = fs / 2.0
+        b, a = butter(2, [low/nyq, high/nyq], btype='band')
+        return filtfilt(b, a, sig)
+
+    def _apply_sensor_dropout(self, signals: dict, fs: float) -> dict:
+        """Simulate sudden signal dropouts and clipping via time-inhomogeneous Markov chain."""
+        if not hasattr(self, '_dropout_state'):
+            self._dropout_state = {k: 'clean' for k in signals}
+            self._dropout_timer = {k: 0.0 for k in signals}
+
+        for key, sig in signals.items():
+            if key == 'temperature':
+                continue
+
+            current = self._dropout_state[key]
+            self._dropout_timer[key] += 1.0 / fs
+
+            if current == 'clean':
+                p_dropout = 0.0001 * (1.0 + 0.5 * np.sin(self._dropout_timer[key] * 0.01))
+                if np.random.random() < p_dropout:
+                    self._dropout_state[key] = 'dropout'
+                    self._dropout_timer[key] = 0.0
+            elif current == 'dropout':
+                duration = np.random.uniform(5, 30)
+                if self._dropout_timer[key] > duration:
+                    self._dropout_state[key] = 'recovering'
+                    self._dropout_timer[key] = 0.0
+            elif current == 'recovering':
+                recovery_progress = min(1.0, self._dropout_timer[key] / np.random.uniform(2, 5))
+                if recovery_progress >= 1.0:
+                    self._dropout_state[key] = 'clean'
+                    self._dropout_timer[key] = 0.0
+                else:
+                    if sig.ndim == 1:
+                        signals[key] = sig * recovery_progress + np.random.normal(0, 0.1, len(sig)) * (1 - recovery_progress)
+                    else:
+                        signals[key] = sig * recovery_progress + np.random.normal(0, 0.1, sig.shape) * (1 - recovery_progress)
+
+            if current == 'dropout':
+                sig_shape = sig.shape
+                if sig.ndim == 1:
+                    n = len(sig)
+                    dropout_len = min(n, int(np.random.uniform(0.5, 1.0) * n))
+                    start = np.random.randint(0, max(1, n - dropout_len))
+                    signals[key] = sig.copy()
+                    signals[key][start:start+dropout_len] = np.random.normal(0, 0.001, dropout_len)
+                else:
+                    n = sig.shape[0]
+                    dropout_len = min(n, int(np.random.uniform(0.5, 1.0) * n))
+                    start = np.random.randint(0, max(1, n - dropout_len))
+                    signals[key] = sig.copy()
+                    signals[key][start:start+dropout_len] = np.random.normal(0, 0.001, (dropout_len, sig_shape[1]))
+
+        return signals
+
     def _apply_baseline_wander(
         self, signal_arr: NDArray[np.float64], hz: float
     ) -> NDArray[np.float64]:
         """Apply 0.1-0.5 Hz baseline wander from respiration and movement."""
-        n_samples = signal_arr.shape[-1]
-        t = np.arange(n_samples) / hz
-        bw_freq = self.rng.uniform(0.1, 0.5)
-        bw_amp = self.rng.uniform(0.02, 0.08)
-        bw = bw_amp * np.sin(_PI2 * bw_freq * t + self.rng.uniform(0, _PI2))
+        n = signal_arr.shape[-1]
+        t = np.arange(n) / hz
+
+        freqs = np.fft.rfftfreq(n, 1.0/hz)
+        freqs[0] = 1.0
+        pink_spectrum = np.random.normal(0, 1, len(freqs)) / np.sqrt(freqs)
+        pink_noise = np.fft.irfft(pink_spectrum, n=n)
+
+        pink_noise = self._bandpass(pink_noise, 0.05, 0.5, hz)
+        pink_noise = pink_noise / (np.std(pink_noise) + 1e-8) * np.random.uniform(0.02, 0.08)
+
         if signal_arr.ndim == 1:
-            return signal_arr + bw
+            return signal_arr + pink_noise
         else:
-            return signal_arr + bw[np.newaxis, :]
+            return signal_arr + pink_noise[np.newaxis, :]
 
     def _apply_50hz_interference(
         self, signal_arr: NDArray[np.float64], hz: float
@@ -1584,6 +1676,8 @@ class SensorArtifactModel:
             "accelerometer": self.config.simulation.sampling_rates["accelerometer_hz"],
             "gyroscope": self.config.simulation.sampling_rates["gyroscope_hz"],
         }
+
+        signals_dict = self._apply_sensor_dropout(signals_dict, self.config.simulation.sampling_rates["ecg_hz"])
 
         for key, sig in signals_dict.items():
             if key not in hz_map:
