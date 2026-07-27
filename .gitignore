@@ -4,3 +4,5 @@ db
 models
 ohca_predictor.egg-info
 **/**/*.pyc
+*.pyc
+__pycache__/
