@@ -521,7 +521,13 @@ class OHCAPredictionModel(keras.Model):
             value_dropout=config.dropout_rate,
             name="ecg_motion_cross_attn",
         )
-
+        self.hierarchical_cross_attention = HierarchicalCrossAttention(
+            model_dim=D,
+            num_heads=config.num_attention_heads,
+            attention_dropout=config.attention_dropout_rate,
+            value_dropout=config.dropout_rate,
+            name="hierarchical_cross_attn",
+        )
         # Multi-modal ECG attends to PPG
         self.ecg_ppg_attention = AsymmetricCrossAttention(
             model_dim=D,
@@ -656,21 +662,20 @@ class OHCAPredictionModel(keras.Model):
         )  # (batch, T_accel + T_gyro, D)
 
         # ---- 10. ECG attends to motion ----
-        attended_ecg = self.ecg_motion_attention(
-            ecg_tokens=ecg_tokens,
-            context_tokens=motion_tokens,
-            training=training,
-        )  # (batch, T_ecg, D)
+# Concatenate all non-ECG modalities into one context
+        context_tokens = tf.concat(
+            [motion_tokens, ppg_tokens, spo2_tokens, temp_tokens, resp_tokens],
+            axis=1
+        )
 
-        # ---- 11. Multi-modal ECG attends to PPG ----
-        multi_modal_ecg = self.ecg_ppg_attention(
-            ecg_tokens=attended_ecg,
-            context_tokens=ppg_tokens,
-            training=training,
-        )  # (batch, T_ecg, D)
+        # Apply hierarchical cross-attention: ECG queries all modalities jointly
+        fused_ecg = self.hierarchical_cross_attention(
+            ecg_tokens, context_tokens, training=training
+        )
+
 
         # ---- 12. Sequence alignment to common length T ----
-        aligned_ecg = self.align_pool_ecg(multi_modal_ecg)
+        aligned_ecg = self.align_pool_ecg(fused_ecg)
         aligned_spo2 = self.align_pool_spo2(spo2_tokens)
         aligned_temp = self.align_pool_temp(temp_tokens)
         aligned_resp = self.align_pool_resp(resp_tokens)

@@ -17,7 +17,19 @@ import sys
 import time
 import traceback
 import warnings
+import joblib as jb
+import logging
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+logging.basicConfig(
+    filename="training.log",
+    level=logging.INFO,
+    format="%(asctime)s | %(message)s",
+)
+logger = logging.getLogger(__name__)
 
+console = Console()
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 os.environ["CUDA_LAUNCH_BLOCKING"] = "0"
@@ -47,7 +59,7 @@ else:
     print("[INIT] No GPU, using CPU float32")
 
 print(f"[INIT] TF {tf.__version__}  |  GPUs: {gpus}")
-
+tf.config.experimental.enable_tensor_float_32_execution(True)
 from ohca_predictor.config import (
     SimulationConfig, TrainingConfig, ModelConfig, EvaluationConfig,
     override_config,
@@ -100,7 +112,6 @@ signal.alarm(PIPELINE_TIMEOUT_SECONDS)
 # ═══════════════════════════════════════════════════════════════════
 # CONFIG
 # ═══════════════════════════════════════════════════════════════════
-
 def make_config():
     return override_config(
         simulation=SimulationConfig(
@@ -110,17 +121,20 @@ def make_config():
             prevalence_ohca=0.10,
         ),
         training=TrainingConfig(
-            batch_size=8,
+            batch_size=16,               # Larger batches stabilize probability calibration
             epochs=300,
-            learning_rate=5e-4,
-            warmup_steps=100,
+            learning_rate=3e-4,          # Stable baseline for cross-attention
+            warmup_steps=300,            # Let attention layers align before pushing boundaries
             min_learning_rate=1e-6,
             mixed_precision=True,
             gradient_clip_norm=0.5,
             gradient_accumulation_steps=1,
-            focal_loss_gamma=1.0,
-            false_negative_weight=4.0,
-            false_positive_weight=1.0,
+            
+            # --- THE CALIBRATION FIX ---
+            focal_loss_gamma=2.0,        # Use Gamma=2 to handle the 10% prevalence dynamically
+            false_negative_weight=1.0,   # MUST BE 1.0 to center the spectrum at 0.50
+            false_positive_weight=1.0,   # MUST BE 1.0 to center the spectrum at 0.50
+            
             survival_loss_weight=0.3,
             auxiliary_loss_weight=0.1,
             contrastive_loss_weight=0.0,
@@ -145,8 +159,8 @@ def make_config():
         evaluation=EvaluationConfig(
             bootstrap_iterations=200,
             confidence_level=0.95,
-            clinical_thresholds=[0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50],
-            primary_threshold=0.20,
+            clinical_thresholds=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+            primary_threshold=0.50,      # Your true, intuitive midpoint
             calibration_bins=10,
         ),
     )
@@ -250,10 +264,10 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
             "val_auroc": [], "val_sens": [], "val_spec": [],
             "val_ppv": [], "val_npv": [], "val_f1": [],
             "val_brier": [], "val_ece": [], "val_auprc": [],
+            "val_acc_opt": [], "val_thr_opt": [],
             "lr": [],
         }
 
-        # Pre-build validation dataset
         self.val_ds = create_padded_dataset(
             val_samples, batch_size=self.config.training.batch_size, shuffle=False,
         )
@@ -265,19 +279,13 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
                            if hasattr(self.model.optimizer, "learning_rate")
                            else 0.0)
 
-        # Try to get lr from schedule
         try:
             if hasattr(self.model.optimizer, "_decayed_lr"):
                 current_lr = float(self.model.optimizer._decayed_lr(tf.float32))
         except Exception:
             pass
 
-        # Collect all validation predictions
-        all_risks = []
-        all_labels = []
-        all_surv = []
-        all_uncert = []
-
+        all_risks, all_labels, all_surv, all_uncert = [], [], [], []
         for batch in self.val_ds:
             outputs = self.model.predict_batch(batch)
             all_risks.append(outputs["ohca_risk"].numpy().ravel())
@@ -290,20 +298,10 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
         all_surv = np.concatenate(all_surv)
         all_uncert = np.concatenate(all_uncert)
 
-        # OOD rejection: flag high-uncertainty predictions
-        if all_uncert.size > 0:
-            epistemic_uncert = all_uncert[:, 1] if all_uncert.ndim > 1 else all_uncert
-            ood_threshold = np.percentile(epistemic_uncert, 90)  # top 10% uncertain
-            ood_mask = epistemic_uncert > ood_threshold
-            if np.sum(ood_mask) > 0 and np.sum(~ood_mask) > 0:
-                auroc_in_dist, _, _ = self.evaluator.compute_auroc(
-                    all_labels[~ood_mask], all_risks[~ood_mask])
-                log(f"    OOD-rejected AUROC (in-dist, n={np.sum(~ood_mask)}): {auroc_in_dist:.3f}")
-
-        # Compute clinical metrics
         auroc = sens = spec = ppv = npv_val = f1 = brier = ece = auprc = 0.0
         auroc_lo = auroc_hi = 0.0
         thr = self.config.evaluation.primary_threshold
+        acc_opt = thr_opt = 0.0
 
         try:
             auroc, auroc_lo, auroc_hi = self.evaluator.compute_auroc(all_labels, all_risks)
@@ -314,8 +312,16 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
             npv_val, _, _ = self.evaluator.compute_npv(all_labels, all_risks, thr)
             f1, _, _ = self.evaluator.compute_f1_score(all_labels, all_risks, thr)
             brier, _, _ = self.evaluator.compute_brier_score(all_labels, all_risks)
+
+            # 🔑 Optimal threshold for accuracy
+            thresholds = np.linspace(0, 1, 200)
+            accs = [accuracy_score(all_labels, (all_risks >= t).astype(int)) for t in thresholds]
+            idx = int(np.argmax(accs))
+            acc_opt = accs[idx]
+            thr_opt = thresholds[idx]
+
         except Exception as e:
-            log(f"  [WARN] Metric error: {e}")
+            logger.warning(f"Metric error: {e}")
 
         try:
             cal_m = self.cal_analyzer.compute_calibration_metrics(all_labels, all_risks)
@@ -338,16 +344,44 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
         self.history["val_brier"].append(float(brier))
         self.history["val_ece"].append(float(ece))
         self.history["val_auprc"].append(float(auprc))
+        self.history["val_acc_opt"].append(float(acc_opt))
+        self.history["val_thr_opt"].append(float(thr_opt))
         self.history["lr"].append(current_lr)
 
-        # Console log
-        log(f"Epoch {epoch+1:3d}/{self.config.training.epochs} | "
+        # Console output (Rich)
+        table = Table(title=f"Epoch {epoch+1}/{self.config.training.epochs}", show_lines=True)
+        table.add_column("Metric", style="cyan", justify="right")
+        table.add_column("Value", style="magenta", justify="center")
+
+        table.add_row("Train Loss", f"{train_loss:.4f}")
+        table.add_row("Val Loss", f"{val_loss:.4f}")
+        table.add_row("AUROC", f"{auroc:.3f} [{auroc_lo:.3f}–{auroc_hi:.3f}]")
+        table.add_row("AUPRC", f"{auprc:.3f}")
+        table.add_row("Acc(opt)", f"{acc_opt:.3f} @ thr={thr_opt:.2f}")
+        table.add_row("Sensitivity", f"{sens:.3f}")
+        table.add_row("Specificity", f"{spec:.3f}")
+        table.add_row("PPV", f"{ppv:.3f}")
+        table.add_row("NPV", f"{npv_val:.3f}")
+        table.add_row("F1", f"{f1:.3f}")
+        table.add_row("Brier", f"{brier:.4f}")
+        table.add_row("ECE", f"{ece:.4f}")
+        table.add_row("Uncertainty", f"{mean_uncert:.2f}")
+        table.add_row("Learning Rate", f"{current_lr:.2e}")
+        table.add_row("Elapsed", f"{elapsed:.0f}s")
+
+        console.print(Panel(table, title="Validation Metrics", border_style="green"))
+
+        # File log (plain text)
+        logger.info(
+            f"Epoch {epoch+1}/{self.config.training.epochs} | "
             f"train_loss={train_loss:.4f} val_loss={val_loss:.4f} | "
             f"AUROC={auroc:.3f} [{auroc_lo:.3f}–{auroc_hi:.3f}] "
+            f"AUPRC={auprc:.3f} Acc(opt)={acc_opt:.3f}@thr={thr_opt:.2f} | "
             f"Sens={sens:.3f} Spec={spec:.3f} PPV={ppv:.3f} F1={f1:.3f} | "
             f"Brier={brier:.4f} ECE={ece:.4f} "
             f"uncert={mean_uncert:.2f} lr={current_lr:.2e} "
-            f"({elapsed:.0f}s)")
+            f"({elapsed:.0f}s)"
+        )
 
         # TensorBoard scalars
         with self.tb_writer.as_default():
@@ -356,6 +390,8 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
             tf.summary.scalar("val/loss", val_loss, step=epoch)
             tf.summary.scalar("val/AUROC", auroc, step=epoch)
             tf.summary.scalar("val/AUPRC", auprc, step=epoch)
+            tf.summary.scalar("val/Accuracy_opt", acc_opt, step=epoch)
+            tf.summary.scalar("val/Threshold_opt", thr_opt, step=epoch)
             tf.summary.scalar("val/sensitivity", sens, step=epoch)
             tf.summary.scalar("val/specificity", spec, step=epoch)
             tf.summary.scalar("val/PPV", ppv, step=epoch)
@@ -368,18 +404,6 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
             tf.summary.histogram("val/true_labels", all_labels, step=epoch)
             tf.summary.scalar("val/survival_mean", float(np.mean(all_surv)), step=epoch)
 
-            # Gradient norm from last train batch
-            if hasattr(self.model, "ohca_model"):
-                try:
-                    vars_sample = self.model.ohca_model.trainable_variables[:5]
-                    grad_norms = [tf.reduce_sum(g**2)
-                                  for g in tape.gradient(0.0, vars_sample) if g is not None]
-                    if grad_norms:
-                        tf.summary.scalar("train/grad_norm_approx",
-                                          float(tf.sqrt(tf.add_n(grad_norms))), step=epoch)
-                except Exception:
-                    pass
-
         self.tb_writer.flush()
 
         # Early stopping / checkpointing
@@ -388,19 +412,18 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
             self.patience_counter = 0
             ckpt_path = os.path.join(MODEL_DIR, "best_checkpoint.weights.h5")
             self.model.ohca_model.save_weights(ckpt_path)
-            log(f"  ★ New best AUROC={auroc:.4f} → saved checkpoint")
+            logger.info(f"★ New best AUROC={auroc:.4f} → saved checkpoint")
         else:
             self.patience_counter += 1
             if self.patience_counter >= self.config.training.early_stopping_patience:
-                log(f"  Early stopping at epoch {epoch+1}")
+                logger.info(f"Early stopping at epoch {epoch+1}")
                 self.model.stop_training = True
 
         # Periodic checkpoint
         if (epoch + 1) % 20 == 0:
             p_path = os.path.join(MODEL_DIR, f"checkpoint_epoch{epoch+1}.weights.h5")
             self.model.ohca_model.save_weights(p_path)
-            log(f"  Checkpoint saved: {p_path}")
-
+            logger.info(f"Checkpoint saved: {p_path}")
 
 # ═══════════════════════════════════════════════════════════════════
 # PHASE 1 — DATA GENERATION
@@ -471,7 +494,7 @@ def phase2_train(config, train_samples, val_samples):
     )
     val_ds = create_padded_dataset(
         val_samples, batch_size=config.training.batch_size, shuffle=False,
-    )
+    ).cache()
 
     train_batches = sum(1 for _ in train_ds)
     val_batches = sum(1 for _ in val_ds)
@@ -480,7 +503,7 @@ def phase2_train(config, train_samples, val_samples):
     # Recreate (datasets consumed)
     train_ds = create_padded_dataset(
         train_samples, batch_size=config.training.batch_size, shuffle=True,
-    )
+    ).cache().prefetch(tf.data.AUTOTUNE)
 
     # Model dimensions from actual data
     demo_dim = int(train_samples[0].demographics.shape[0])
@@ -555,7 +578,7 @@ def phase2_train(config, train_samples, val_samples):
         train_ds,
         epochs=config.training.epochs,
         callbacks=[clinical_cb],
-        verbose=0,
+        verbose=0
     )
 
     total_train_time = time.time() - t_train_start
@@ -572,7 +595,8 @@ def phase2_train(config, train_samples, val_samples):
     with open(hist_path, "w") as f:
         json.dump(clinical_cb.history, f, indent=2, default=str)
     log(f"  Training history saved: {hist_path}")
-
+    ohca_model.save("models/ohca_model_v1.h5")
+    ohca_model.summary()
     return ohca_model, clinical_cb.history, clinical_cb.best_auroc
 
 
@@ -865,8 +889,8 @@ def main():
 
     try:
         config = make_config()
-
-        train_samples, val_samples, test_samples = phase1_generate(config)
+        train_samples, val_samples, test_samples = jb.load("pipeline_data.pkl")
+        #train_samples, val_samples, test_samples = phase1_generate(config)
 
         if len(train_samples) == 0:
             log("[ERROR] No training data. Aborting.")

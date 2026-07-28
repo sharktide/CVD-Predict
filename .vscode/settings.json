@@ -1,0 +1,8 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:pyenv",
+    "files.exclude": {
+        "**/.old": true,
+        "**/.old2": true,
+        "**/.old-legacy": true
+    }
+}
