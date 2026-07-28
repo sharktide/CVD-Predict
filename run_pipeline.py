@@ -71,6 +71,7 @@ from ohca_predictor.model.losses import CombinedOHCALoss
 from ohca_predictor.training.trainer import CosineDecayWithWarmup
 from ohca_predictor.evaluation.metrics import OHCAEvaluator
 from ohca_predictor.evaluation.calibration import CalibrationAnalyzer
+from sklearn.metrics import accuracy_score
 
 # ── Constants ──────────────────────────────────────────────────────
 PIPELINE_TIMEOUT_SECONDS = 12 * 3600
@@ -118,23 +119,20 @@ def make_config():
             min_window_duration_hours=0.05,
             max_window_duration_hours=0.12,
             population_size=1000,
-            prevalence_ohca=0.10,
+            prevalence_ohca=0.15,
         ),
         training=TrainingConfig(
-            batch_size=16,               # Larger batches stabilize probability calibration
+            batch_size=16,
             epochs=300,
-            learning_rate=3e-4,          # Stable baseline for cross-attention
-            warmup_steps=300,            # Let attention layers align before pushing boundaries
+            learning_rate=3e-4,
+            warmup_steps=300,
             min_learning_rate=1e-6,
             mixed_precision=True,
             gradient_clip_norm=0.5,
             gradient_accumulation_steps=1,
-            
-            # --- THE CALIBRATION FIX ---
-            focal_loss_gamma=2.0,        # Use Gamma=2 to handle the 10% prevalence dynamically
-            false_negative_weight=1.0,   # MUST BE 1.0 to center the spectrum at 0.50
-            false_positive_weight=1.0,   # MUST BE 1.0 to center the spectrum at 0.50
-            
+            focal_loss_gamma=2.0,
+            false_negative_weight=5.0,
+            false_positive_weight=1.0,
             survival_loss_weight=0.3,
             auxiliary_loss_weight=0.1,
             contrastive_loss_weight=0.0,
@@ -144,14 +142,14 @@ def make_config():
             weight_decay=0.01,
         ),
         model=ModelConfig(
-            model_dim=128,
-            num_attention_heads=4,
-            num_encoder_layers=4,
-            feedforward_dim=256,
-            dropout_rate=0.3,
-            attention_dropout_rate=0.15,
+            model_dim=192,
+            num_attention_heads=8,
+            num_encoder_layers=6,
+            feedforward_dim=512,
+            dropout_rate=0.2,
+            attention_dropout_rate=0.1,
             static_embedding_dim=64,
-            tokens_per_modality=64,
+            tokens_per_modality=128,
             max_positional_encoding=4096,
             num_survival_bins=12,
             uncertainty_samples=5,
@@ -160,7 +158,7 @@ def make_config():
             bootstrap_iterations=200,
             confidence_level=0.95,
             clinical_thresholds=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-            primary_threshold=0.50,      # Your true, intuitive midpoint
+            primary_threshold=0.50,
             calibration_bins=10,
         ),
     )
@@ -250,11 +248,12 @@ class OHCA_TrainableModel(tf.keras.Model):
 class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
     """Evaluates clinical metrics at end of each epoch and logs to TensorBoard."""
 
-    def __init__(self, val_samples, config, tb_writer):
+    def __init__(self, val_samples, config, tb_writer, loss_fn=None):
         super().__init__()
         self.val_samples = val_samples
         self.config = config
         self.tb_writer = tb_writer
+        self.loss_fn = loss_fn
         self.evaluator = OHCAEvaluator(config.evaluation)
         self.cal_analyzer = CalibrationAnalyzer(config.evaluation)
         self.best_auroc = 0.0
@@ -274,7 +273,6 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         train_loss = logs.get("loss", 0.0)
-        val_loss = logs.get("val_loss", logs.get("loss", 0.0))
         current_lr = float(self.model.optimizer.learning_rate
                            if hasattr(self.model.optimizer, "learning_rate")
                            else 0.0)
@@ -286,12 +284,22 @@ class ClinicalMetricsCallback(tf.keras.callbacks.Callback):
             pass
 
         all_risks, all_labels, all_surv, all_uncert = [], [], [], []
+        val_loss_total = 0.0
+        val_batches = 0
         for batch in self.val_ds:
             outputs = self.model.predict_batch(batch)
             all_risks.append(outputs["ohca_risk"].numpy().ravel())
             all_labels.append(batch["ohca_label"].numpy().ravel())
             all_surv.append(outputs["survival_curve"].numpy())
             all_uncert.append(outputs["uncertainty"].numpy())
+            # Compute val loss from the model's loss function
+            try:
+                vl = self.model.loss_fn(batch, outputs)
+                val_loss_total += float(vl.numpy())
+                val_batches += 1
+            except Exception:
+                pass
+        val_loss = val_loss_total / max(1, val_batches)
 
         all_risks = np.concatenate(all_risks)
         all_labels = np.concatenate(all_labels)
@@ -568,12 +576,12 @@ def phase2_train(config, train_samples, val_samples):
     log(f"  TensorBoard: {TENSORBOARD_DIR}")
 
     # Clinical metrics callback
-    clinical_cb = ClinicalMetricsCallback(val_samples, config, tb_writer)
+    clinical_cb = ClinicalMetricsCallback(val_samples, config, tb_writer, loss_fn=loss_fn)
 
     # ── Train ──────────────────────────────────────────────────────
     t_train_start = time.time()
     log("  Starting training...")
-
+    trainable_model.summary()
     trainable_model.fit(
         train_ds,
         epochs=config.training.epochs,
@@ -889,8 +897,12 @@ def main():
 
     try:
         config = make_config()
-        train_samples, val_samples, test_samples = jb.load("pipeline_data.pkl")
-        #train_samples, val_samples, test_samples = phase1_generate(config)
+        if os.path.isfile("pipeline_data.pkl"):
+            log("  Loading pre-generated pipeline data from 'pipeline_data.pkl' ...")
+            train_samples, val_samples, test_samples = jb.load("pipeline_data.pkl")
+        else:
+            train_samples, val_samples, test_samples = phase1_generate(config)
+            jb.dump((train_samples, val_samples, test_samples), "pipeline_data.pkl")
 
         if len(train_samples) == 0:
             log("[ERROR] No training data. Aborting.")

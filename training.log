@@ -1,0 +1,306 @@
+2026-07-28 10:51:55,234 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:51:55,240 | Epoch 1/300 | train_loss=2.2230 val_loss=0.0000 | AUROC=0.570 [0.461–0.665] AUPRC=0.323 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=0.993 PPV=0.000 F1=0.000 | Brier=0.2230 ECE=0.2229 uncert=13.62 lr=5.70e-05 (0s)
+2026-07-28 10:51:56,636 | ★ New best AUROC=0.5702 → saved checkpoint
+2026-07-28 10:52:43,813 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:52:43,818 | Epoch 2/300 | train_loss=1.5961 val_loss=0.0000 | AUROC=0.636 [0.537–0.719] AUPRC=0.392 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.2126 ECE=0.2082 uncert=16.88 lr=1.14e-04 (0s)
+2026-07-28 10:52:44,769 | ★ New best AUROC=0.6364 → saved checkpoint
+2026-07-28 10:53:31,823 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:53:31,831 | Epoch 3/300 | train_loss=1.1688 val_loss=0.0000 | AUROC=0.681 [0.580–0.771] AUPRC=0.464 Acc(opt)=0.000@thr=0.00 | Sens=0.045 Spec=1.000 PPV=1.000 F1=0.087 | Brier=0.1946 ECE=0.1869 uncert=12.62 lr=1.71e-04 (0s)
+2026-07-28 10:53:32,623 | ★ New best AUROC=0.6805 → saved checkpoint
+2026-07-28 10:54:18,787 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:54:18,790 | Epoch 4/300 | train_loss=0.9826 val_loss=0.0000 | AUROC=0.801 [0.693–0.869] AUPRC=0.579 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.1717 ECE=0.1506 uncert=7.59 lr=2.28e-04 (0s)
+2026-07-28 10:54:19,757 | ★ New best AUROC=0.8006 → saved checkpoint
+2026-07-28 10:55:06,022 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:55:06,027 | Epoch 5/300 | train_loss=0.7617 val_loss=0.0000 | AUROC=0.693 [0.611–0.770] AUPRC=0.398 Acc(opt)=0.000@thr=0.00 | Sens=0.682 Spec=0.609 PPV=0.337 F1=0.451 | Brier=0.2212 ECE=0.2450 uncert=14.69 lr=2.85e-04 (0s)
+2026-07-28 10:55:51,497 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:55:51,502 | Epoch 6/300 | train_loss=0.6139 val_loss=0.0000 | AUROC=0.497 [0.387–0.591] AUPRC=0.228 Acc(opt)=0.000@thr=0.00 | Sens=0.182 Spec=0.815 PPV=0.222 F1=0.200 | Brier=0.2159 ECE=0.1786 uncert=17.75 lr=3.00e-04 (0s)
+2026-07-28 10:56:37,947 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:56:37,950 | Epoch 7/300 | train_loss=0.4892 val_loss=0.0000 | AUROC=0.686 [0.591–0.762] AUPRC=0.400 Acc(opt)=0.000@thr=0.00 | Sens=0.023 Spec=0.993 PPV=0.500 F1=0.043 | Brier=0.1865 ECE=0.1488 uncert=18.50 lr=3.00e-04 (0s)
+2026-07-28 10:57:24,925 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:57:24,929 | Epoch 8/300 | train_loss=0.4376 val_loss=0.0000 | AUROC=0.596 [0.509–0.687] AUPRC=0.344 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.1785 ECE=0.0804 uncert=18.75 lr=3.00e-04 (0s)
+2026-07-28 10:58:09,413 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:58:09,417 | Epoch 9/300 | train_loss=0.3921 val_loss=0.0000 | AUROC=0.669 [0.567–0.770] AUPRC=0.419 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=0.993 PPV=0.000 F1=0.000 | Brier=0.2009 ECE=0.1807 uncert=8.25 lr=3.00e-04 (0s)
+2026-07-28 10:58:56,439 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:58:56,442 | Epoch 10/300 | train_loss=0.3880 val_loss=0.0000 | AUROC=0.819 [0.747–0.883] AUPRC=0.551 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.1731 ECE=0.1624 uncert=9.75 lr=3.00e-04 (0s)
+2026-07-28 10:58:57,426 | ★ New best AUROC=0.8191 → saved checkpoint
+2026-07-28 10:59:42,870 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 10:59:42,874 | Epoch 11/300 | train_loss=0.3656 val_loss=0.0000 | AUROC=0.746 [0.664–0.821] AUPRC=0.477 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.1741 ECE=0.1370 uncert=11.25 lr=3.00e-04 (0s)
+2026-07-28 11:00:28,855 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:00:28,858 | Epoch 12/300 | train_loss=0.3627 val_loss=0.0000 | AUROC=0.823 [0.727–0.892] AUPRC=0.580 Acc(opt)=0.000@thr=0.00 | Sens=0.023 Spec=1.000 PPV=1.000 F1=0.044 | Brier=0.1663 ECE=0.1805 uncert=18.75 lr=3.00e-04 (0s)
+2026-07-28 11:00:29,724 | ★ New best AUROC=0.8228 → saved checkpoint
+2026-07-28 11:01:15,635 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:01:15,638 | Epoch 13/300 | train_loss=0.3593 val_loss=0.0000 | AUROC=0.834 [0.763–0.897] AUPRC=0.570 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.1850 ECE=0.1776 uncert=17.50 lr=2.99e-04 (0s)
+2026-07-28 11:01:16,467 | ★ New best AUROC=0.8342 → saved checkpoint
+2026-07-28 11:02:03,402 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:02:03,406 | Epoch 14/300 | train_loss=0.3592 val_loss=0.0000 | AUROC=0.860 [0.790–0.917] AUPRC=0.649 Acc(opt)=0.000@thr=0.00 | Sens=0.000 Spec=1.000 PPV=0.000 F1=0.000 | Brier=0.1426 ECE=0.1502 uncert=18.62 lr=2.99e-04 (0s)
+2026-07-28 11:02:04,310 | ★ New best AUROC=0.8604 → saved checkpoint
+2026-07-28 11:02:51,519 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:02:51,526 | Epoch 15/300 | train_loss=0.3504 val_loss=0.0000 | AUROC=0.887 [0.819–0.933] AUPRC=0.728 Acc(opt)=0.000@thr=0.00 | Sens=0.250 Spec=0.993 PPV=0.917 F1=0.393 | Brier=0.1363 ECE=0.1535 uncert=18.75 lr=2.99e-04 (0s)
+2026-07-28 11:02:52,527 | ★ New best AUROC=0.8865 → saved checkpoint
+2026-07-28 11:03:39,932 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:03:39,935 | Epoch 16/300 | train_loss=0.3429 val_loss=0.0000 | AUROC=0.895 [0.836–0.937] AUPRC=0.755 Acc(opt)=0.000@thr=0.00 | Sens=0.295 Spec=0.987 PPV=0.867 F1=0.441 | Brier=0.1351 ECE=0.1534 uncert=15.25 lr=2.99e-04 (0s)
+2026-07-28 11:03:40,878 | ★ New best AUROC=0.8948 → saved checkpoint
+2026-07-28 11:04:28,274 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:04:28,281 | Epoch 17/300 | train_loss=0.3331 val_loss=0.0000 | AUROC=0.892 [0.834–0.935] AUPRC=0.745 Acc(opt)=0.000@thr=0.00 | Sens=0.386 Spec=0.980 PPV=0.850 F1=0.531 | Brier=0.1278 ECE=0.1370 uncert=14.12 lr=2.99e-04 (0s)
+2026-07-28 11:05:16,054 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:05:16,060 | Epoch 18/300 | train_loss=0.3254 val_loss=0.0000 | AUROC=0.901 [0.846–0.944] AUPRC=0.778 Acc(opt)=0.000@thr=0.00 | Sens=0.659 Spec=0.934 PPV=0.744 F1=0.699 | Brier=0.1233 ECE=0.1710 uncert=12.50 lr=2.99e-04 (0s)
+2026-07-28 11:05:17,054 | ★ New best AUROC=0.9009 → saved checkpoint
+2026-07-28 11:06:03,682 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:06:03,689 | Epoch 19/300 | train_loss=0.3069 val_loss=0.0000 | AUROC=0.897 [0.847–0.940] AUPRC=0.757 Acc(opt)=0.000@thr=0.00 | Sens=0.659 Spec=0.934 PPV=0.744 F1=0.699 | Brier=0.1074 ECE=0.0992 uncert=9.12 lr=2.98e-04 (0s)
+2026-07-28 11:06:51,610 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:06:51,616 | Epoch 20/300 | train_loss=0.2961 val_loss=0.0000 | AUROC=0.894 [0.839–0.941] AUPRC=0.753 Acc(opt)=0.000@thr=0.00 | Sens=0.727 Spec=0.921 PPV=0.727 F1=0.727 | Brier=0.1002 ECE=0.0723 uncert=10.50 lr=2.98e-04 (0s)
+2026-07-28 11:06:52,608 | Checkpoint saved: models/checkpoint_epoch20.weights.h5
+2026-07-28 11:07:39,947 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:07:39,954 | Epoch 21/300 | train_loss=0.3034 val_loss=0.0000 | AUROC=0.897 [0.843–0.943] AUPRC=0.748 Acc(opt)=0.000@thr=0.00 | Sens=0.614 Spec=0.940 PPV=0.750 F1=0.675 | Brier=0.0990 ECE=0.0646 uncert=9.12 lr=2.98e-04 (0s)
+2026-07-28 11:08:27,069 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:08:27,076 | Epoch 22/300 | train_loss=0.2797 val_loss=0.0000 | AUROC=0.902 [0.848–0.951] AUPRC=0.796 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.921 PPV=0.733 F1=0.742 | Brier=0.0918 ECE=0.0933 uncert=6.69 lr=2.98e-04 (0s)
+2026-07-28 11:08:28,089 | ★ New best AUROC=0.9019 → saved checkpoint
+2026-07-28 11:09:15,225 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:09:15,231 | Epoch 23/300 | train_loss=0.2819 val_loss=0.0000 | AUROC=0.892 [0.831–0.945] AUPRC=0.768 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.914 PPV=0.723 F1=0.747 | Brier=0.1057 ECE=0.1359 uncert=6.66 lr=2.97e-04 (0s)
+2026-07-28 11:10:02,593 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:10:02,599 | Epoch 24/300 | train_loss=0.2719 val_loss=0.0000 | AUROC=0.903 [0.846–0.954] AUPRC=0.812 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.934 PPV=0.767 F1=0.759 | Brier=0.0907 ECE=0.0945 uncert=6.66 lr=2.97e-04 (0s)
+2026-07-28 11:10:02,905 | ★ New best AUROC=0.9028 → saved checkpoint
+2026-07-28 11:10:50,139 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:10:50,144 | Epoch 25/300 | train_loss=0.2563 val_loss=0.0000 | AUROC=0.909 [0.857–0.959] AUPRC=0.824 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.901 PPV=0.706 F1=0.758 | Brier=0.0941 ECE=0.1181 uncert=13.19 lr=2.97e-04 (0s)
+2026-07-28 11:10:51,044 | ★ New best AUROC=0.9094 → saved checkpoint
+2026-07-28 11:11:38,369 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:11:38,374 | Epoch 26/300 | train_loss=0.2572 val_loss=0.0000 | AUROC=0.915 [0.863–0.962] AUPRC=0.821 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.901 PPV=0.706 F1=0.758 | Brier=0.0932 ECE=0.1209 uncert=14.69 lr=2.96e-04 (0s)
+2026-07-28 11:11:39,397 | ★ New best AUROC=0.9146 → saved checkpoint
+2026-07-28 11:12:27,160 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:12:27,164 | Epoch 27/300 | train_loss=0.2616 val_loss=0.0000 | AUROC=0.914 [0.861–0.961] AUPRC=0.842 Acc(opt)=0.000@thr=0.00 | Sens=0.841 Spec=0.874 PPV=0.661 F1=0.740 | Brier=0.1012 ECE=0.1250 uncert=16.88 lr=2.96e-04 (0s)
+2026-07-28 11:13:14,180 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:13:14,186 | Epoch 28/300 | train_loss=0.2513 val_loss=0.0000 | AUROC=0.914 [0.856–0.965] AUPRC=0.853 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.934 PPV=0.783 F1=0.800 | Brier=0.0844 ECE=0.1107 uncert=17.38 lr=2.95e-04 (0s)
+2026-07-28 11:14:02,361 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:14:02,369 | Epoch 29/300 | train_loss=0.2387 val_loss=0.0000 | AUROC=0.915 [0.862–0.965] AUPRC=0.847 Acc(opt)=0.000@thr=0.00 | Sens=0.864 Spec=0.894 PPV=0.704 F1=0.776 | Brier=0.0979 ECE=0.1433 uncert=14.25 lr=2.95e-04 (0s)
+2026-07-28 11:14:03,399 | ★ New best AUROC=0.9148 → saved checkpoint
+2026-07-28 11:14:50,739 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:14:50,747 | Epoch 30/300 | train_loss=0.2552 val_loss=0.0000 | AUROC=0.910 [0.853–0.962] AUPRC=0.843 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.967 PPV=0.878 F1=0.847 | Brier=0.0761 ECE=0.1077 uncert=12.38 lr=2.95e-04 (0s)
+2026-07-28 11:15:39,057 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:15:39,063 | Epoch 31/300 | train_loss=0.2386 val_loss=0.0000 | AUROC=0.913 [0.854–0.967] AUPRC=0.856 Acc(opt)=0.000@thr=0.00 | Sens=0.841 Spec=0.960 PPV=0.860 F1=0.851 | Brier=0.0734 ECE=0.1206 uncert=14.12 lr=2.94e-04 (0s)
+2026-07-28 11:16:25,445 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:16:25,451 | Epoch 32/300 | train_loss=0.2397 val_loss=0.0000 | AUROC=0.909 [0.842–0.967] AUPRC=0.855 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.960 PPV=0.857 F1=0.837 | Brier=0.0704 ECE=0.0860 uncert=13.44 lr=2.94e-04 (0s)
+2026-07-28 11:17:13,434 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:17:13,438 | Epoch 33/300 | train_loss=0.2343 val_loss=0.0000 | AUROC=0.910 [0.844–0.963] AUPRC=0.854 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.987 PPV=0.944 F1=0.850 | Brier=0.0641 ECE=0.0745 uncert=15.25 lr=2.93e-04 (0s)
+2026-07-28 11:18:00,574 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:18:00,578 | Epoch 34/300 | train_loss=0.2302 val_loss=0.0000 | AUROC=0.911 [0.850–0.964] AUPRC=0.872 Acc(opt)=0.000@thr=0.00 | Sens=0.841 Spec=0.927 PPV=0.771 F1=0.804 | Brier=0.0737 ECE=0.1029 uncert=12.94 lr=2.93e-04 (0s)
+2026-07-28 11:18:48,827 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:18:48,834 | Epoch 35/300 | train_loss=0.2251 val_loss=0.0000 | AUROC=0.897 [0.824–0.962] AUPRC=0.858 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.987 PPV=0.944 F1=0.850 | Brier=0.0696 ECE=0.0980 uncert=16.25 lr=2.92e-04 (0s)
+2026-07-28 11:19:35,890 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:19:35,896 | Epoch 36/300 | train_loss=0.2302 val_loss=0.0000 | AUROC=0.901 [0.832–0.962] AUPRC=0.863 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.987 PPV=0.943 F1=0.835 | Brier=0.0722 ECE=0.1292 uncert=15.56 lr=2.92e-04 (0s)
+2026-07-28 11:20:23,957 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:20:23,962 | Epoch 37/300 | train_loss=0.2451 val_loss=0.0000 | AUROC=0.894 [0.823–0.958] AUPRC=0.834 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.987 PPV=0.944 F1=0.850 | Brier=0.0657 ECE=0.0974 uncert=16.00 lr=2.91e-04 (0s)
+2026-07-28 11:21:10,814 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:21:10,819 | Epoch 38/300 | train_loss=0.2685 val_loss=0.0000 | AUROC=0.888 [0.819–0.957] AUPRC=0.823 Acc(opt)=0.000@thr=0.00 | Sens=0.841 Spec=0.934 PPV=0.787 F1=0.813 | Brier=0.0727 ECE=0.0769 uncert=18.12 lr=2.91e-04 (0s)
+2026-07-28 11:21:58,794 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:21:58,798 | Epoch 39/300 | train_loss=0.2243 val_loss=0.0000 | AUROC=0.893 [0.821–0.958] AUPRC=0.845 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.980 PPV=0.919 F1=0.840 | Brier=0.0598 ECE=0.0570 uncert=18.38 lr=2.90e-04 (0s)
+2026-07-28 11:22:44,744 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:22:44,749 | Epoch 40/300 | train_loss=0.2001 val_loss=0.0000 | AUROC=0.895 [0.822–0.958] AUPRC=0.851 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.993 PPV=0.971 F1=0.861 | Brier=0.0638 ECE=0.0766 uncert=18.75 lr=2.90e-04 (0s)
+2026-07-28 11:22:45,708 | Checkpoint saved: models/checkpoint_epoch40.weights.h5
+2026-07-28 11:23:32,822 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:23:32,828 | Epoch 41/300 | train_loss=0.2360 val_loss=0.0000 | AUROC=0.890 [0.813–0.960] AUPRC=0.854 Acc(opt)=0.000@thr=0.00 | Sens=0.682 Spec=0.993 PPV=0.968 F1=0.800 | Brier=0.0782 ECE=0.1182 uncert=17.62 lr=2.89e-04 (0s)
+2026-07-28 11:24:20,372 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:24:20,379 | Epoch 42/300 | train_loss=0.2230 val_loss=0.0000 | AUROC=0.894 [0.819–0.954] AUPRC=0.831 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.967 PPV=0.868 F1=0.805 | Brier=0.0806 ECE=0.1110 uncert=17.88 lr=2.88e-04 (0s)
+2026-07-28 11:25:08,406 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:25:08,410 | Epoch 43/300 | train_loss=0.2408 val_loss=0.0000 | AUROC=0.900 [0.826–0.965] AUPRC=0.865 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.980 PPV=0.921 F1=0.854 | Brier=0.0597 ECE=0.0622 uncert=17.75 lr=2.88e-04 (0s)
+2026-07-28 11:25:56,026 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:25:56,030 | Epoch 44/300 | train_loss=0.2268 val_loss=0.0000 | AUROC=0.884 [0.810–0.948] AUPRC=0.820 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.954 PPV=0.829 F1=0.800 | Brier=0.0847 ECE=0.1096 uncert=18.75 lr=2.87e-04 (0s)
+2026-07-28 11:26:43,748 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:26:43,751 | Epoch 45/300 | train_loss=0.2103 val_loss=0.0000 | AUROC=0.897 [0.822–0.959] AUPRC=0.857 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.954 PPV=0.833 F1=0.814 | Brier=0.0843 ECE=0.1219 uncert=18.75 lr=2.86e-04 (0s)
+2026-07-28 11:27:31,272 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:27:31,276 | Epoch 46/300 | train_loss=0.1849 val_loss=0.0000 | AUROC=0.896 [0.824–0.960] AUPRC=0.853 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.921 PPV=0.745 F1=0.769 | Brier=0.0940 ECE=0.1439 uncert=18.75 lr=2.86e-04 (0s)
+2026-07-28 11:28:19,499 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:28:19,506 | Epoch 47/300 | train_loss=0.2035 val_loss=0.0000 | AUROC=0.900 [0.819–0.965] AUPRC=0.849 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.980 PPV=0.923 F1=0.867 | Brier=0.0673 ECE=0.1021 uncert=18.75 lr=2.85e-04 (0s)
+2026-07-28 11:29:04,686 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:29:04,691 | Epoch 48/300 | train_loss=0.2118 val_loss=0.0000 | AUROC=0.914 [0.851–0.968] AUPRC=0.855 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.987 PPV=0.946 F1=0.864 | Brier=0.0653 ECE=0.1075 uncert=18.75 lr=2.84e-04 (0s)
+2026-07-28 11:29:53,555 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:29:53,559 | Epoch 49/300 | train_loss=0.2190 val_loss=0.0000 | AUROC=0.906 [0.836–0.963] AUPRC=0.846 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.987 PPV=0.943 F1=0.835 | Brier=0.0737 ECE=0.1174 uncert=18.75 lr=2.83e-04 (0s)
+2026-07-28 11:30:41,064 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:30:41,068 | Epoch 50/300 | train_loss=0.1974 val_loss=0.0000 | AUROC=0.892 [0.812–0.956] AUPRC=0.834 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.901 PPV=0.694 F1=0.731 | Brier=0.0981 ECE=0.1526 uncert=18.75 lr=2.83e-04 (0s)
+2026-07-28 11:31:30,293 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:31:30,296 | Epoch 51/300 | train_loss=0.2088 val_loss=0.0000 | AUROC=0.916 [0.844–0.967] AUPRC=0.855 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.993 PPV=0.971 F1=0.861 | Brier=0.0562 ECE=0.0455 uncert=18.75 lr=2.82e-04 (0s)
+2026-07-28 11:31:31,230 | ★ New best AUROC=0.9156 → saved checkpoint
+2026-07-28 11:32:17,796 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:32:17,802 | Epoch 52/300 | train_loss=0.2114 val_loss=0.0000 | AUROC=0.898 [0.824–0.959] AUPRC=0.845 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.987 PPV=0.943 F1=0.835 | Brier=0.0636 ECE=0.0625 uncert=18.75 lr=2.81e-04 (0s)
+2026-07-28 11:33:04,305 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:33:04,310 | Epoch 53/300 | train_loss=0.1951 val_loss=0.0000 | AUROC=0.902 [0.827–0.960] AUPRC=0.842 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.993 PPV=0.971 F1=0.846 | Brier=0.0612 ECE=0.0506 uncert=18.75 lr=2.80e-04 (0s)
+2026-07-28 11:33:50,892 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:33:50,900 | Epoch 54/300 | train_loss=0.1942 val_loss=0.0000 | AUROC=0.915 [0.850–0.967] AUPRC=0.858 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.993 PPV=0.971 F1=0.846 | Brier=0.0608 ECE=0.0683 uncert=17.88 lr=2.80e-04 (0s)
+2026-07-28 11:34:38,363 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:34:38,370 | Epoch 55/300 | train_loss=0.1895 val_loss=0.0000 | AUROC=0.907 [0.834–0.960] AUPRC=0.837 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.960 PPV=0.850 F1=0.810 | Brier=0.0750 ECE=0.0828 uncert=16.62 lr=2.79e-04 (0s)
+2026-07-28 11:35:24,944 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:35:24,948 | Epoch 56/300 | train_loss=0.2040 val_loss=0.0000 | AUROC=0.899 [0.830–0.960] AUPRC=0.846 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.980 PPV=0.919 F1=0.840 | Brier=0.0676 ECE=0.0667 uncert=17.75 lr=2.78e-04 (0s)
+2026-07-28 11:36:14,000 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:36:14,006 | Epoch 57/300 | train_loss=0.1850 val_loss=0.0000 | AUROC=0.908 [0.839–0.960] AUPRC=0.852 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.940 PPV=0.791 F1=0.782 | Brier=0.0740 ECE=0.0826 uncert=18.50 lr=2.77e-04 (0s)
+2026-07-28 11:37:01,048 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:37:01,054 | Epoch 58/300 | train_loss=0.1992 val_loss=0.0000 | AUROC=0.884 [0.808–0.947] AUPRC=0.832 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.901 PPV=0.700 F1=0.745 | Brier=0.1016 ECE=0.1446 uncert=18.75 lr=2.76e-04 (0s)
+2026-07-28 11:37:48,862 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:37:48,868 | Epoch 59/300 | train_loss=0.1684 val_loss=0.0000 | AUROC=0.891 [0.815–0.949] AUPRC=0.840 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.914 PPV=0.729 F1=0.761 | Brier=0.1019 ECE=0.1382 uncert=18.62 lr=2.75e-04 (0s)
+2026-07-28 11:38:35,346 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:38:35,349 | Epoch 60/300 | train_loss=0.1915 val_loss=0.0000 | AUROC=0.897 [0.825–0.954] AUPRC=0.830 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.967 PPV=0.868 F1=0.805 | Brier=0.0665 ECE=0.0419 uncert=17.00 lr=2.74e-04 (0s)
+2026-07-28 11:38:36,102 | Checkpoint saved: models/checkpoint_epoch60.weights.h5
+2026-07-28 11:39:23,457 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:39:23,463 | Epoch 61/300 | train_loss=0.2025 val_loss=0.0000 | AUROC=0.892 [0.817–0.951] AUPRC=0.817 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.974 PPV=0.892 F1=0.815 | Brier=0.0701 ECE=0.0668 uncert=18.00 lr=2.73e-04 (0s)
+2026-07-28 11:40:10,363 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:40:10,366 | Epoch 62/300 | train_loss=0.2035 val_loss=0.0000 | AUROC=0.912 [0.836–0.963] AUPRC=0.841 Acc(opt)=0.000@thr=0.00 | Sens=0.841 Spec=0.894 PPV=0.698 F1=0.763 | Brier=0.0948 ECE=0.1284 uncert=18.62 lr=2.73e-04 (0s)
+2026-07-28 11:40:57,906 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:40:57,909 | Epoch 63/300 | train_loss=0.2004 val_loss=0.0000 | AUROC=0.887 [0.815–0.945] AUPRC=0.816 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.894 PPV=0.686 F1=0.737 | Brier=0.1028 ECE=0.1467 uncert=18.75 lr=2.72e-04 (0s)
+2026-07-28 11:41:44,790 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:41:44,796 | Epoch 64/300 | train_loss=0.2028 val_loss=0.0000 | AUROC=0.920 [0.857–0.970] AUPRC=0.853 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.940 PPV=0.800 F1=0.809 | Brier=0.0724 ECE=0.0740 uncert=18.75 lr=2.71e-04 (0s)
+2026-07-28 11:41:45,824 | ★ New best AUROC=0.9196 → saved checkpoint
+2026-07-28 11:42:33,640 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:42:33,643 | Epoch 65/300 | train_loss=0.1884 val_loss=0.0000 | AUROC=0.896 [0.821–0.959] AUPRC=0.840 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.934 PPV=0.778 F1=0.787 | Brier=0.0858 ECE=0.0984 uncert=18.75 lr=2.70e-04 (0s)
+2026-07-28 11:43:21,244 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:43:21,252 | Epoch 66/300 | train_loss=0.1621 val_loss=0.0000 | AUROC=0.896 [0.819–0.958] AUPRC=0.830 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.940 PPV=0.795 F1=0.795 | Brier=0.0790 ECE=0.0874 uncert=18.75 lr=2.69e-04 (0s)
+2026-07-28 11:44:08,455 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:44:08,459 | Epoch 67/300 | train_loss=0.1909 val_loss=0.0000 | AUROC=0.915 [0.852–0.961] AUPRC=0.842 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.980 PPV=0.917 F1=0.825 | Brier=0.0785 ECE=0.1202 uncert=18.75 lr=2.68e-04 (0s)
+2026-07-28 11:44:55,530 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:44:55,537 | Epoch 68/300 | train_loss=0.1771 val_loss=0.0000 | AUROC=0.900 [0.831–0.954] AUPRC=0.852 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.927 PPV=0.766 F1=0.791 | Brier=0.0919 ECE=0.1339 uncert=18.75 lr=2.67e-04 (0s)
+2026-07-28 11:45:43,161 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:45:43,165 | Epoch 69/300 | train_loss=0.1867 val_loss=0.0000 | AUROC=0.904 [0.830–0.962] AUPRC=0.846 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.960 PPV=0.850 F1=0.810 | Brier=0.0657 ECE=0.0551 uncert=18.75 lr=2.66e-04 (0s)
+2026-07-28 11:46:30,347 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:46:30,353 | Epoch 70/300 | train_loss=0.1802 val_loss=0.0000 | AUROC=0.885 [0.810–0.943] AUPRC=0.841 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.987 PPV=0.943 F1=0.835 | Brier=0.0649 ECE=0.0397 uncert=18.75 lr=2.65e-04 (0s)
+2026-07-28 11:47:17,157 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:47:17,161 | Epoch 71/300 | train_loss=0.1624 val_loss=0.0000 | AUROC=0.906 [0.838–0.958] AUPRC=0.854 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.954 PPV=0.837 F1=0.828 | Brier=0.0820 ECE=0.0962 uncert=18.75 lr=2.64e-04 (0s)
+2026-07-28 11:48:03,932 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:48:03,938 | Epoch 72/300 | train_loss=0.1564 val_loss=0.0000 | AUROC=0.894 [0.815–0.955] AUPRC=0.804 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.947 PPV=0.810 F1=0.791 | Brier=0.0913 ECE=0.0889 uncert=18.75 lr=2.63e-04 (0s)
+2026-07-28 11:48:51,522 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:48:51,529 | Epoch 73/300 | train_loss=0.1756 val_loss=0.0000 | AUROC=0.917 [0.853–0.960] AUPRC=0.840 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.921 PPV=0.750 F1=0.783 | Brier=0.0847 ECE=0.0827 uncert=18.38 lr=2.61e-04 (0s)
+2026-07-28 11:49:38,497 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:49:38,503 | Epoch 74/300 | train_loss=0.1620 val_loss=0.0000 | AUROC=0.910 [0.841–0.961] AUPRC=0.834 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.967 PPV=0.872 F1=0.819 | Brier=0.0679 ECE=0.0524 uncert=17.38 lr=2.60e-04 (0s)
+2026-07-28 11:50:26,029 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:50:26,032 | Epoch 75/300 | train_loss=0.1597 val_loss=0.0000 | AUROC=0.885 [0.799–0.946] AUPRC=0.833 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.874 PPV=0.642 F1=0.701 | Brier=0.1062 ECE=0.1145 uncert=17.12 lr=2.59e-04 (0s)
+2026-07-28 11:51:13,044 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:51:13,051 | Epoch 76/300 | train_loss=0.1843 val_loss=0.0000 | AUROC=0.877 [0.785–0.944] AUPRC=0.810 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.914 PPV=0.717 F1=0.733 | Brier=0.0918 ECE=0.1078 uncert=18.75 lr=2.58e-04 (0s)
+2026-07-28 11:52:00,436 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:52:00,439 | Epoch 77/300 | train_loss=0.1682 val_loss=0.0000 | AUROC=0.890 [0.799–0.958] AUPRC=0.855 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.940 PPV=0.800 F1=0.809 | Brier=0.0784 ECE=0.0820 uncert=18.75 lr=2.57e-04 (0s)
+2026-07-28 11:52:46,306 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:52:46,309 | Epoch 78/300 | train_loss=0.1965 val_loss=0.0000 | AUROC=0.880 [0.798–0.949] AUPRC=0.831 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.980 PPV=0.917 F1=0.825 | Brier=0.0689 ECE=0.0612 uncert=18.75 lr=2.56e-04 (0s)
+2026-07-28 11:53:34,345 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:53:34,351 | Epoch 79/300 | train_loss=0.1546 val_loss=0.0000 | AUROC=0.867 [0.782–0.932] AUPRC=0.823 Acc(opt)=0.000@thr=0.00 | Sens=0.727 Spec=0.967 PPV=0.865 F1=0.790 | Brier=0.0765 ECE=0.0608 uncert=18.75 lr=2.55e-04 (0s)
+2026-07-28 11:54:21,253 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:54:21,256 | Epoch 80/300 | train_loss=0.1789 val_loss=0.0000 | AUROC=0.889 [0.818–0.946] AUPRC=0.834 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.980 PPV=0.917 F1=0.825 | Brier=0.0683 ECE=0.0584 uncert=18.75 lr=2.54e-04 (0s)
+2026-07-28 11:54:22,142 | Checkpoint saved: models/checkpoint_epoch80.weights.h5
+2026-07-28 11:55:09,368 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:55:09,373 | Epoch 81/300 | train_loss=0.1506 val_loss=0.0000 | AUROC=0.899 [0.818–0.957] AUPRC=0.846 Acc(opt)=0.000@thr=0.00 | Sens=0.727 Spec=0.967 PPV=0.865 F1=0.790 | Brier=0.0753 ECE=0.0603 uncert=18.12 lr=2.52e-04 (0s)
+2026-07-28 11:55:56,422 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:55:56,428 | Epoch 82/300 | train_loss=0.1372 val_loss=0.0000 | AUROC=0.902 [0.821–0.958] AUPRC=0.857 Acc(opt)=0.000@thr=0.00 | Sens=0.727 Spec=0.974 PPV=0.889 F1=0.800 | Brier=0.0689 ECE=0.0672 uncert=17.50 lr=2.51e-04 (0s)
+2026-07-28 11:56:44,639 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:56:44,644 | Epoch 83/300 | train_loss=0.1457 val_loss=0.0000 | AUROC=0.908 [0.834–0.957] AUPRC=0.871 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.947 PPV=0.810 F1=0.791 | Brier=0.0778 ECE=0.0778 uncert=18.62 lr=2.50e-04 (0s)
+2026-07-28 11:57:31,379 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:57:31,384 | Epoch 84/300 | train_loss=0.1384 val_loss=0.0000 | AUROC=0.917 [0.851–0.964] AUPRC=0.858 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.954 PPV=0.833 F1=0.814 | Brier=0.0676 ECE=0.0641 uncert=18.62 lr=2.49e-04 (0s)
+2026-07-28 11:58:19,296 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:58:19,303 | Epoch 85/300 | train_loss=0.1396 val_loss=0.0000 | AUROC=0.913 [0.846–0.964] AUPRC=0.848 Acc(opt)=0.000@thr=0.00 | Sens=0.818 Spec=0.914 PPV=0.735 F1=0.774 | Brier=0.0807 ECE=0.0770 uncert=18.25 lr=2.47e-04 (0s)
+2026-07-28 11:59:05,619 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:59:05,626 | Epoch 86/300 | train_loss=0.1297 val_loss=0.0000 | AUROC=0.912 [0.839–0.965] AUPRC=0.853 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.960 PPV=0.846 F1=0.795 | Brier=0.0703 ECE=0.0709 uncert=16.62 lr=2.46e-04 (0s)
+2026-07-28 11:59:53,359 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 11:59:53,366 | Epoch 87/300 | train_loss=0.1265 val_loss=0.0000 | AUROC=0.900 [0.828–0.951] AUPRC=0.846 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.927 PPV=0.756 F1=0.764 | Brier=0.0748 ECE=0.0806 uncert=17.38 lr=2.45e-04 (0s)
+2026-07-28 12:00:39,849 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:00:39,852 | Epoch 88/300 | train_loss=0.1404 val_loss=0.0000 | AUROC=0.901 [0.822–0.955] AUPRC=0.844 Acc(opt)=0.000@thr=0.00 | Sens=0.795 Spec=0.914 PPV=0.729 F1=0.761 | Brier=0.0865 ECE=0.0854 uncert=15.81 lr=2.44e-04 (0s)
+2026-07-28 12:01:26,763 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:01:26,769 | Epoch 89/300 | train_loss=0.1277 val_loss=0.0000 | AUROC=0.900 [0.829–0.955] AUPRC=0.843 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.974 PPV=0.892 F1=0.815 | Brier=0.0719 ECE=0.0770 uncert=13.38 lr=2.42e-04 (0s)
+2026-07-28 12:02:12,921 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:02:12,925 | Epoch 90/300 | train_loss=0.1110 val_loss=0.0000 | AUROC=0.900 [0.826–0.957] AUPRC=0.844 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.947 PPV=0.805 F1=0.776 | Brier=0.0738 ECE=0.0737 uncert=16.50 lr=2.41e-04 (0s)
+2026-07-28 12:03:00,212 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:03:00,217 | Epoch 91/300 | train_loss=0.1231 val_loss=0.0000 | AUROC=0.887 [0.816–0.943] AUPRC=0.822 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.940 PPV=0.786 F1=0.767 | Brier=0.0890 ECE=0.1040 uncert=15.00 lr=2.40e-04 (0s)
+2026-07-28 12:03:46,656 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:03:46,659 | Epoch 92/300 | train_loss=0.1427 val_loss=0.0000 | AUROC=0.890 [0.813–0.946] AUPRC=0.831 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.848 PPV=0.596 F1=0.673 | Brier=0.1060 ECE=0.1172 uncert=16.12 lr=2.39e-04 (0s)
+2026-07-28 12:04:33,773 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:04:33,780 | Epoch 93/300 | train_loss=0.0995 val_loss=0.0000 | AUROC=0.911 [0.834–0.969] AUPRC=0.858 Acc(opt)=0.000@thr=0.00 | Sens=0.773 Spec=0.921 PPV=0.739 F1=0.756 | Brier=0.0778 ECE=0.0793 uncert=14.38 lr=2.37e-04 (0s)
+2026-07-28 12:05:20,053 | Metric error: name 'accuracy_score' is not defined
+2026-07-28 12:05:20,056 | Epoch 94/300 | train_loss=0.0924 val_loss=0.0000 | AUROC=0.913 [0.844–0.966] AUPRC=0.873 Acc(opt)=0.000@thr=0.00 | Sens=0.750 Spec=0.967 PPV=0.868 F1=0.805 | Brier=0.0707 ECE=0.0750 uncert=13.81 lr=2.36e-04 (0s)
+2026-07-28 12:05:20,092 | Early stopping at epoch 94
+
+ Total params: 17,122,720 (65.32 MB)
+ Trainable params: 17,110,944 (65.27 MB)
+ Non-trainable params: 11,776 (46.00 KB)
+[2026-07-28 12:05:21] ======================================================================
+[2026-07-28 12:05:21] PHASE 3: COMPREHENSIVE EVALUATION ON HELD-OUT TEST SET
+[2026-07-28 12:05:21] ======================================================================
+[2026-07-28 12:05:49]   Test set: 198 samples, 44 positive (22.2%)
+[2026-07-28 12:05:49] 
+  ── Core Metrics (threshold=0.5) ──
+[2026-07-28 12:05:49] 
+  ── Multi-Threshold Analysis ──
+[2026-07-28 12:05:50]     thr=0.10: Sens=0.864 Spec=0.494 PPV=0.328 NPV=0.927 F1=0.475 J=0.357
+[2026-07-28 12:05:51]     thr=0.20: Sens=0.727 Spec=0.766 PPV=0.471 NPV=0.908 F1=0.571 J=0.494
+[2026-07-28 12:05:52]     thr=0.30: Sens=0.705 Spec=0.844 PPV=0.564 NPV=0.909 F1=0.626 J=0.549
+[2026-07-28 12:05:52]     thr=0.40: Sens=0.705 Spec=0.890 PPV=0.646 NPV=0.913 F1=0.674 J=0.594
+[2026-07-28 12:05:53]     thr=0.50: Sens=0.705 Spec=0.929 PPV=0.738 NPV=0.917 F1=0.721 J=0.633
+[2026-07-28 12:05:54]     thr=0.60: Sens=0.705 Spec=0.948 PPV=0.795 NPV=0.918 F1=0.747 J=0.653
+[2026-07-28 12:05:55]     thr=0.70: Sens=0.659 Spec=0.981 PPV=0.906 NPV=0.910 F1=0.763 J=0.640
+[2026-07-28 12:05:55]     thr=0.80: Sens=0.614 Spec=0.987 PPV=0.931 NPV=0.899 F1=0.740 J=0.601
+[2026-07-28 12:05:55] 
+  Optimal threshold (Youden's J): 0.60 (J=0.653)
+[2026-07-28 12:05:55] 
+  ── Metrics at Optimal Threshold (0.6) ──
+[2026-07-28 12:05:56] 
+  ── Calibration Analysis ──
+[2026-07-28 12:05:56]     ECE: 0.0873
+[2026-07-28 12:05:56]     MCE: 0.5456
+[2026-07-28 12:05:56]     Brier: 0.1032
+[2026-07-28 12:05:56]       bin [0.00–0.10]: observed=0.073 expected=0.039
+[2026-07-28 12:05:56]       bin [0.10–0.20]: observed=0.125 expected=0.139
+[2026-07-28 12:05:56]       bin [0.20–0.30]: observed=0.077 expected=0.255
+[2026-07-28 12:05:56]       bin [0.30–0.40]: observed=0.000 expected=0.359
+[2026-07-28 12:05:56]       bin [0.40–0.50]: observed=0.000 expected=0.448
+[2026-07-28 12:05:56]       bin [0.50–0.60]: observed=0.000 expected=0.546
+[2026-07-28 12:05:56]       bin [0.60–0.70]: observed=0.286 expected=0.640
+[2026-07-28 12:05:56]       bin [0.70–0.80]: observed=0.667 expected=0.749
+[2026-07-28 12:05:56]       bin [0.90–1.00]: observed=0.931 expected=0.996
+[2026-07-28 12:05:56] 
+  ── Subgroup Calibration ──
+[2026-07-28 12:06:00] 
+  ── Decision Curve Analysis ──
+[2026-07-28 12:06:00]     Max net benefit: 0.2050 at threshold 0.010
+[2026-07-28 12:06:00]     Net benefit at 0.10: 0.1481
+[2026-07-28 12:06:00]     Net benefit at 0.20: 0.1162
+[2026-07-28 12:06:00]     Net benefit at 0.30: 0.1046
+[2026-07-28 12:06:00]     Model beats treat-all for thresholds: [0.08, 0.98]
+[2026-07-28 12:06:00] 
+  ── Uncertainty Analysis ──
+[2026-07-28 12:06:00]     Mean predicted risk: 4.7503
+[2026-07-28 12:06:00]     Mean uncertainty (σ): 20.0896
+[2026-07-28 12:06:00]     Median σ: 20.1250
+[2026-07-28 12:06:00] 
+  ── Survival Analysis ──
+[2026-07-28 12:06:00]     Survival curve shape: (198, 13)
+[2026-07-28 12:06:00]     Mean survival at t=0: 1.0000
+[2026-07-28 12:06:00]     Mean survival at t=end: 0.0000
+[2026-07-28 12:06:00] 
+  ── Risk Stratification ──
+[2026-07-28 12:06:00]     [0.00, 0.05): n=  52 prevalence=0.077
+[2026-07-28 12:06:00]     [0.05, 0.15): n=  64 prevalence=0.109
+[2026-07-28 12:06:00]     [0.15, 0.30): n=  27 prevalence=0.074
+[2026-07-28 12:06:00]     [0.30, 0.50): n=  13 prevalence=0.000
+[2026-07-28 12:06:00]     [0.50, 1.01): n=  42 prevalence=0.738
+[2026-07-28 12:06:00] 
+  ── Prediction Distribution ──
+[2026-07-28 12:06:00]     Risk range: [0.0000, 1.0000]
+[2026-07-28 12:06:00]     Risk mean±std: 0.2809 ± 0.3388
+[2026-07-28 12:06:00]     Percentiles: p10=0.0151 p25=0.0414 p50=0.1274 p75=0.3779 p90=1.0000
+[2026-07-28 12:06:00] 
+  ── Bootstrap 95% CIs ──
+[2026-07-28 12:06:00]     AUROC: 0.8257 [0.7512, 0.8990]
+[2026-07-28 12:06:01]     AUPRC: 0.7442 [0.6208, 0.8481]
+[2026-07-28 12:06:01]     Sens@0.5: 0.7045 [0.5833, 0.8207]
+[2026-07-28 12:06:01]     Spec@0.5: 0.9286 [0.8805, 0.9676]
+[2026-07-28 12:06:01] 
+  Results saved: results/evaluation_results.json
+[2026-07-28 12:06:02] 
+  Final model saved: models/ohca_model_final.weights.h5
+[2026-07-28 12:06:02]   Config saved: models/config.json
+[2026-07-28 12:06:02] 
+  To use the model:
+[2026-07-28 12:06:02]     from ohca_predictor.pipeline import OHCAPredictorPipeline
+[2026-07-28 12:06:02]     pipe = OHCAPredictorPipeline.load('models/ohca_model_final.weights.h5')
+[2026-07-28 12:06:02]     result = pipe.predict(ecg=ecg, accelerometer=accel, ppg=ppg, ...)
+[2026-07-28 12:06:02]     print(result.risk, result.uncertainty, result.high_risk)
+[2026-07-28 12:06:02] 
+======================================================================
+[2026-07-28 12:06:02] PIPELINE COMPLETE
+[2026-07-28 12:06:02]   Total time: 1.55h (5574s)
+[2026-07-28 12:06:02]   Best validation AUROC: 0.9196
+[2026-07-28 12:06:02]   Results: results/evaluation_results.json
+[2026-07-28 12:06:02]   TensorBoard: logs/pipeline/tensorboard
+[2026-07-28 12:06:02]   Model: models/ohca_model_final.weights.h5
+[2026-07-28 12:06:02] ======================================================================
