@@ -633,8 +633,9 @@ def phase2_train(config, train_samples, val_samples):
     trainable_model.fit(
         train_ds,
         epochs=config.training.epochs,
+        steps_per_epoch=steps_per_epoch, 
         callbacks=[clinical_cb],
-        verbose=0
+        verbose=1
     )
 
     total_train_time = time.time() - t_train_start
