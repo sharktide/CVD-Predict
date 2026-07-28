@@ -33,6 +33,8 @@ console = Console()
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 os.environ["CUDA_LAUNCH_BLOCKING"] = "0"
+os.environ['TF_CUDNN_USE_AUTOTUNE'] = '0'
+
 warnings.filterwarnings("ignore")
 
 import numpy as np
@@ -43,7 +45,7 @@ gpus = tf.config.list_physical_devices("GPU")
 if gpus:
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
-    tf.config.optimizer.set_jit(False)
+        tf.config.optimizer.set_jit(False)
     try:
         policy = tf.keras.mixed_precision.Policy("mixed_bfloat16")
         tf.keras.mixed_precision.set_global_policy(policy)
@@ -122,14 +124,14 @@ def make_config():
             prevalence_ohca=0.15,
         ),
         training=TrainingConfig(
-            batch_size=16,
+            batch_size=8,
             epochs=300,
-            learning_rate=3e-4,
+            learning_rate=4e-4,
             warmup_steps=300,
             min_learning_rate=1e-6,
             mixed_precision=True,
             gradient_clip_norm=0.5,
-            gradient_accumulation_steps=1,
+            gradient_accumulation_steps=4,
             focal_loss_gamma=2.0,
             false_negative_weight=5.0,
             false_positive_weight=1.0,
@@ -167,22 +169,33 @@ def make_config():
 # ═══════════════════════════════════════════════════════════════════
 # Keras Custom Training Model — eliminates gradient accumulation bugs
 # ═══════════════════════════════════════════════════════════════════
-
 class OHCA_TrainableModel(tf.keras.Model):
-    """Wraps OHCAPredictionModel with a robust train_step/test_step.
-
-    This avoids manual gradient accumulation entirely — Keras handles
-    loss scaling, gradient clipping, and variable management.
+    """Wraps OHCAPredictionModel with custom gradient accumulation.
+    
+    Processes small physical batches to save VRAM, while accumulating 
+    gradients over N steps to simulate a large, stable effective batch size.
     """
 
-    def __init__(self, ohca_model, loss_fn, clip_norm=1.0, **kwargs):
+    def __init__(self, ohca_model, loss_fn, clip_norm=1.0, accum_steps=4, **kwargs):
         super().__init__(**kwargs)
         self.ohca_model = ohca_model
         self.loss_fn = loss_fn
         self.clip_norm = clip_norm
+        self.accum_steps = accum_steps
+
+        # Track the current accumulation step (0 to accum_steps)
+        self.step_counter = tf.Variable(0, dtype=tf.int32, trainable=False)
 
         self._train_loss = tf.keras.metrics.Mean(name="loss")
         self._val_loss = tf.keras.metrics.Mean(name="val_loss")
+
+    def compile(self, optimizer, **kwargs):
+        super().compile(optimizer=optimizer, **kwargs)
+        # Create zero-initialized tracking tensors matching the model's weights
+        self.gradient_accumulators = [
+            tf.Variable(tf.zeros_like(v), trainable=False)
+            for v in self.ohca_model.trainable_variables
+        ]
 
     @property
     def metrics(self):
@@ -192,41 +205,72 @@ class OHCA_TrainableModel(tf.keras.Model):
         return self.ohca_model(inputs, training=training)
 
     def train_step(self, batch):
+        accum_steps_f = tf.cast(self.accum_steps, tf.float32)
+
         with tf.GradientTape() as tape:
             outputs = self(batch, training=True)
             base_loss = self.loss_fn(batch, outputs)
 
-            # Curriculum time-to-event weighting: penalize late detections
-            # Windows closer to OHCA get LOWER weight (easy to detect)
-            # Windows 30min-2h before get HIGHER weight (clinically valuable)
+            # Curriculum time-to-event weighting
             time_to_event = batch.get("time_to_event")
             ohca_label = batch.get("ohca_label")
             if time_to_event is not None and ohca_label is not None:
                 tte_hours = tf.cast(time_to_event, tf.float32) / 3600.0
                 label_f = tf.cast(ohca_label, tf.float32)
-                # Weight peaks at 1-2 hours before OHCA, drops for very close (<30min) and far (>4h)
                 time_weight = tf.where(
                     label_f > 0.5,
-                    tf.exp(-0.3 * (tte_hours - 1.5) ** 2) * 0.8 + 0.6,  # Gentle peak at 1.5h
-                    1.0  # normal weight for negatives
+                    tf.exp(-0.3 * (tte_hours - 1.5) ** 2) * 0.8 + 0.6,
+                    1.0
                 )
                 time_weight = tf.clip_by_value(time_weight, 0.6, 1.8)
                 weighted_loss = tf.reduce_mean(base_loss * time_weight)
             else:
                 weighted_loss = base_loss
 
-        trainable_vars = self.ohca_model.trainable_variables
-        grads = tape.gradient(weighted_loss, trainable_vars)
+            # Scale loss down so the accumulated gradient sum matches an average over 32 samples
+            scaled_loss = weighted_loss / accum_steps_f
 
-        # Filter None grads, NaN/Inf grads, and clip
-        grads_and_vars = []
-        for g, v in zip(grads, trainable_vars):
+        trainable_vars = self.ohca_model.trainable_variables
+        grads = tape.gradient(scaled_loss, trainable_vars)
+
+        # Filter and accumulate gradients natively
+        for i, g in enumerate(grads):
             if g is not None:
-                g = tf.where(tf.math.is_finite(g), g, tf.zeros_like(g))
-                g = tf.clip_by_norm(g, self.clip_norm)
+                # Handle potential numerical instability from mixed precision/bfloat16
+                g_clean = tf.where(tf.math.is_finite(g), g, tf.zeros_like(g))
+                self.gradient_accumulators[i].assign_add(g_clean)
+
+        # Advance our accumulation counter step
+        self.step_counter.assign_add(1)
+
+        # Conditional function: Triggers optimizer ONLY when step_counter == accum_steps
+        def apply_gradients_stage():
+            # Package accumulated gradients into a structured list
+            grads_and_vars = []
+            accum_grads = [v.read_value() for v in self.gradient_accumulators]
+            
+            # Apply global norm clipping across the accumulated total
+            clipped_grads, _ = tf.clip_by_global_norm(accum_grads, self.clip_norm)
+            
+            for g, v in zip(clipped_grads, trainable_vars):
                 grads_and_vars.append((g, v))
 
-        self.optimizer.apply_gradients(grads_and_vars)
+            # Apply steps to AdamW optimizer
+            self.optimizer.apply_gradients(grads_and_vars)
+
+            # Clear out the accumulators entirely for the next macro-step cycle
+            for i in range(len(self.gradient_accumulators)):
+                self.gradient_accumulators[i].assign(tf.zeros_like(self.gradient_accumulators[i]))
+            self.step_counter.assign(0)
+
+        # Execute conditional update check
+        tf.cond(
+            tf.equal(self.step_counter, self.accum_steps),
+            apply_gradients_stage,
+            lambda: tf.no_op()
+        )
+
+        # Keep tracking metrics based on the unscaled training loss
         self._train_loss.update_state(weighted_loss)
         return {m.name: m.result() for m in self.metrics}
 
@@ -493,25 +537,30 @@ def phase1_generate(config):
 # ═══════════════════════════════════════════════════════════════════
 
 def phase2_train(config, train_samples, val_samples):
+    tf.keras.backend.clear_session()
+    gc.collect()
     log("=" * 70)
     log("PHASE 2: TRAINING (stable Keras custom train_step)")
     log("=" * 70)
 
+    import numpy as np
+
+    # 1. Calculate the batch counts mathematically using Python (Lightning fast, 0 memory)
+    steps_per_epoch = int(np.ceil(len(train_samples) / config.training.batch_size))  // config.training.gradient_accumulation_steps
+    val_batches = int(np.ceil(len(val_samples) / config.training.batch_size))
+
+    log(f"  Train batches: {steps_per_epoch}  |  Val batches: {val_batches}")
+
+    # 2. Build the datasets EXACTLY ONCE and prepare them straight for training
     train_ds = create_padded_dataset(
         train_samples, batch_size=config.training.batch_size, shuffle=True,
-    )
+    ).prefetch(tf.data.AUTOTUNE)
+
     val_ds = create_padded_dataset(
         val_samples, batch_size=config.training.batch_size, shuffle=False,
-    ).cache()
-
-    train_batches = sum(1 for _ in train_ds)
-    val_batches = sum(1 for _ in val_ds)
-    log(f"  Train batches: {train_batches}  |  Val batches: {val_batches}")
-
-    # Recreate (datasets consumed)
-    train_ds = create_padded_dataset(
-        train_samples, batch_size=config.training.batch_size, shuffle=True,
     ).cache().prefetch(tf.data.AUTOTUNE)
+
+    # Now train_ds and val_ds are perfectly fresh and ready for model.fit()!
 
     # Model dimensions from actual data
     demo_dim = int(train_samples[0].demographics.shape[0])
@@ -547,8 +596,6 @@ def phase2_train(config, train_samples, val_samples):
         focal_gamma=config.training.focal_loss_gamma,
     )
 
-    # LR schedule + optimizer
-    steps_per_epoch = max(1, train_batches)
     total_steps = config.training.epochs * steps_per_epoch
     log(f"  Steps/epoch: {steps_per_epoch}  |  Total steps: {total_steps}")
 
@@ -568,6 +615,7 @@ def phase2_train(config, train_samples, val_samples):
         ohca_model=ohca_model,
         loss_fn=loss_fn,
         clip_norm=config.training.gradient_clip_norm,
+        accum_steps=config.training.gradient_accumulation_steps 
     )
     trainable_model.compile(optimizer=optimizer, jit_compile=False)
 
