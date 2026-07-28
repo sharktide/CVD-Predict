@@ -227,7 +227,7 @@ class OHCA_TrainableModel(tf.keras.Model):
             else:
                 weighted_loss = base_loss
 
-            # Scale loss down so the accumulated gradient sum matches an average over 32 samples
+            # Scale loss down for accumulation safety
             scaled_loss = weighted_loss / accum_steps_f
 
         trainable_vars = self.ohca_model.trainable_variables
@@ -236,7 +236,6 @@ class OHCA_TrainableModel(tf.keras.Model):
         # Filter and accumulate gradients natively
         for i, g in enumerate(grads):
             if g is not None:
-                # Handle potential numerical instability from mixed precision/bfloat16
                 g_clean = tf.where(tf.math.is_finite(g), g, tf.zeros_like(g))
                 self.gradient_accumulators[i].assign_add(g_clean)
 
@@ -245,7 +244,6 @@ class OHCA_TrainableModel(tf.keras.Model):
 
         # Conditional function: Triggers optimizer ONLY when step_counter == accum_steps
         def apply_gradients_stage():
-            # Package accumulated gradients into a structured list
             grads_and_vars = []
             accum_grads = [v.read_value() for v in self.gradient_accumulators]
             
@@ -262,12 +260,14 @@ class OHCA_TrainableModel(tf.keras.Model):
             for i in range(len(self.gradient_accumulators)):
                 self.gradient_accumulators[i].assign(tf.zeros_like(self.gradient_accumulators[i]))
             self.step_counter.assign(0)
+            return None  # Explicitly return None (0 outputs)
 
         # Execute conditional update check
+        # Using lambda: None ensures both branches return exactly 0 outputs
         tf.cond(
             tf.equal(self.step_counter, self.accum_steps),
             apply_gradients_stage,
-            lambda: tf.no_op()
+            lambda: None
         )
 
         # Keep tracking metrics based on the unscaled training loss
