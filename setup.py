@@ -26,7 +26,6 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "ohca-train=ohca_predictor.scripts.train:main",
             "ohca-evaluate=ohca_predictor.scripts.evaluate:main",
             "ohca-generate=ohca_predictor.scripts.generate_data:main",
             "ohca-profile=ohca_predictor.scripts.profile:main",
