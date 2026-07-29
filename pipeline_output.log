@@ -1,449 +1,115 @@
-[2026-07-28 14:18:44] ======================================================================
-[2026-07-28 14:18:44] OHCA PREDICTION — PRODUCTION PIPELINE v2
-[2026-07-28 14:18:44]   Timeout: 12h
-[2026-07-28 14:18:44]   TF: 2.21.0
-[2026-07-28 14:18:44]   GPUs: [PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')]
-[2026-07-28 14:18:44]   Mixed precision: mixed_bfloat16
-[2026-07-28 14:18:44] ======================================================================
-[2026-07-28 14:18:44]   Loading pre-generated pipeline data from 'pipeline_data.pkl' ...
-[2026-07-28 14:18:52] ======================================================================
-[2026-07-28 14:18:52] PHASE 2: TRAINING (stable Keras custom train_step)
-[2026-07-28 14:18:52] ======================================================================
-[2026-07-28 14:18:52]   Train batches: 28  |  Val batches: 24
-[2026-07-28 14:18:54]   Input dims: demographics=24 meds=14 comorbidities=14 labs=8
-[2026-07-28 14:19:03]   Model params: 37,024,480
-[2026-07-28 14:19:03]   Sequence length: 513 (1 static + 4×128)
-[2026-07-28 14:19:03]   Steps/epoch: 28  |  Total steps: 8400
-[2026-07-28 14:19:03]   TensorBoard: logs/pipeline/tensorboard
-[2026-07-28 14:19:03]   Starting training...
-[2026-07-28 14:22:17] 
-[FATAL] Pipeline error: Graph execution error:
-
-Detected at node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual defined at (most recent call last):
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 1014, in <module>
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 960, in main
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 633, in phase2_train
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 399, in fit
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 241, in function
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 154, in multi_step_on_iterator
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 125, in wrapper
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 134, in one_step_on_data
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 211, in train_step
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 205, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/architecture.py", line 707, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 554, in call
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 531, in _encoder_forward
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 416, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 210, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/regularization/dropout.py", line 102, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/random.py", line 88, in dropout
-
-Detected at node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual defined at (most recent call last):
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 1014, in <module>
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 960, in main
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 633, in phase2_train
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 399, in fit
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 241, in function
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 154, in multi_step_on_iterator
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 125, in wrapper
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 134, in one_step_on_data
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 211, in train_step
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 205, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/architecture.py", line 707, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 554, in call
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 531, in _encoder_forward
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 416, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 210, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/regularization/dropout.py", line 102, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/random.py", line 88, in dropout
-
-2 root error(s) found.
-  (0) RESOURCE_EXHAUSTED:  failed to allocate memory
-	 [[{{node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual}}]]
-Hint: If you want to see a list of allocated tensors when OOM happens, add report_tensor_allocations_upon_oom to RunOptions for current allocation info. This isn't available when running in Eager mode.
-
-	 [[StatefulPartitionedCall/cond/pivot_t/_2154/_995]]
-Hint: If you want to see a list of allocated tensors when OOM happens, add report_tensor_allocations_upon_oom to RunOptions for current allocation info. This isn't available when running in Eager mode.
-
-  (1) RESOURCE_EXHAUSTED:  failed to allocate memory
-	 [[{{node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual}}]]
-Hint: If you want to see a list of allocated tensors when OOM happens, add report_tensor_allocations_upon_oom to RunOptions for current allocation info. This isn't available when running in Eager mode.
-
-0 successful operations.
-0 derived errors ignored. [Op:__inference_multi_step_on_iterator_138211]
-Traceback (most recent call last):
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 960, in main
-    model, history, best_auroc = phase2_train(config, train_samples, val_samples)
-                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 633, in phase2_train
-    trainable_model.fit(
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 122, in error_handler
-    raise e.with_traceback(filtered_tb) from None
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/tensorflow/python/eager/execute.py", line 59, in quick_execute
-    except TypeError as e:
-tensorflow.python.framework.errors_impl.ResourceExhaustedError: Graph execution error:
-
-Detected at node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual defined at (most recent call last):
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 1014, in <module>
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 960, in main
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 633, in phase2_train
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 399, in fit
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 241, in function
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 154, in multi_step_on_iterator
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 125, in wrapper
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 134, in one_step_on_data
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 211, in train_step
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 205, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/architecture.py", line 707, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 554, in call
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 531, in _encoder_forward
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 416, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 210, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/regularization/dropout.py", line 102, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/random.py", line 88, in dropout
-
-Detected at node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual defined at (most recent call last):
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 1014, in <module>
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 960, in main
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 633, in phase2_train
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 399, in fit
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 241, in function
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 154, in multi_step_on_iterator
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 125, in wrapper
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/trainer.py", line 134, in one_step_on_data
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 211, in train_step
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/run_pipeline.py", line 205, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/architecture.py", line 707, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 554, in call
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 531, in _encoder_forward
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 416, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/CVD-Predict/ohca_predictor/model/encoder.py", line 210, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/layer.py", line 953, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 117, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/ops/operation.py", line 59, in __call__
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/utils/traceback_utils.py", line 156, in error_handler
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/layers/regularization/dropout.py", line 102, in call
-
-  File "/home/meher/.pyenv/versions/3.12.10/lib/python3.12/site-packages/keras/src/backend/tensorflow/random.py", line 88, in dropout
-
-2 root error(s) found.
-  (0) RESOURCE_EXHAUSTED:  failed to allocate memory
-	 [[{{node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual}}]]
-Hint: If you want to see a list of allocated tensors when OOM happens, add report_tensor_allocations_upon_oom to RunOptions for current allocation info. This isn't available when running in Eager mode.
-
-	 [[StatefulPartitionedCall/cond/pivot_t/_2154/_995]]
-Hint: If you want to see a list of allocated tensors when OOM happens, add report_tensor_allocations_upon_oom to RunOptions for current allocation info. This isn't available when running in Eager mode.
-
-  (1) RESOURCE_EXHAUSTED:  failed to allocate memory
-	 [[{{node ohca__trainable_model_1/ohca_prediction_model_1/transformer_encoder_1/encoder_block_5_1/self_attention_1/dropout_82_1/stateless_dropout/GreaterEqual}}]]
-Hint: If you want to see a list of allocated tensors when OOM happens, add report_tensor_allocations_upon_oom to RunOptions for current allocation info. This isn't available when running in Eager mode.
-
-0 successful operations.
-0 derived errors ignored. [Op:__inference_multi_step_on_iterator_138211]
+[2026-07-29 06:14:16] ======================================================================
+[2026-07-29 06:14:16] OHCA PREDICTION — PRODUCTION PIPELINE v2
+[2026-07-29 06:14:16]   Timeout: 12h
+[2026-07-29 06:14:16]   TF: 2.21.0
+[2026-07-29 06:14:16]   GPUs: [PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')]
+[2026-07-29 06:14:16]   Mixed precision: mixed_bfloat16
+[2026-07-29 06:14:16] ======================================================================
+[2026-07-29 06:14:16]   Loading pre-generated pipeline data from 'pipeline_data.pkl' ...
+[2026-07-29 06:14:23] ======================================================================
+[2026-07-29 06:14:23] PHASE 2: TRAINING (stable Keras custom train_step)
+[2026-07-29 06:14:23] ======================================================================
+[2026-07-29 06:14:23]   Train batches: 28  |  Val batches: 25
+[2026-07-29 06:14:23]   Input dims: demographics=24 meds=14 comorbidities=14 labs=8
+[2026-07-29 06:14:30]   Model params: 17,086,624
+[2026-07-29 06:14:30]   Sequence length: 257 (1 static + 4×64)
+[2026-07-29 06:14:30]   Steps/epoch: 28  |  Total steps: 8400
+[2026-07-29 06:14:31]   TensorBoard: logs/pipeline/tensorboard
+[2026-07-29 06:14:31]   Starting training...
+[2026-07-29 06:43:31]   Total training time: 0.48h (1740s)
+[2026-07-29 06:43:32]   Restored best weights (AUROC=0.6178)
+[2026-07-29 06:43:32]   Training history saved: results/training_history.json
+[2026-07-29 06:43:33] ======================================================================
+[2026-07-29 06:43:33] PHASE 3: COMPREHENSIVE EVALUATION ON HELD-OUT TEST SET
+[2026-07-29 06:43:33] ======================================================================
+[2026-07-29 06:43:52]   Test set: 189 samples, 61 positive (32.3%)
+[2026-07-29 06:43:52] 
+  ── Core Metrics (threshold=0.5) ──
+[2026-07-29 06:43:53] 
+  ── Multi-Threshold Analysis ──
+[2026-07-29 06:43:54]     thr=0.10: Sens=0.934 Spec=0.164 PPV=0.348 NPV=0.840 F1=0.507 J=0.098
+[2026-07-29 06:43:54]     thr=0.20: Sens=0.869 Spec=0.258 PPV=0.358 NPV=0.805 F1=0.507 J=0.127
+[2026-07-29 06:43:55]     thr=0.30: Sens=0.820 Spec=0.352 PPV=0.376 NPV=0.804 F1=0.515 J=0.171
+[2026-07-29 06:43:55]     thr=0.40: Sens=0.770 Spec=0.398 PPV=0.379 NPV=0.785 F1=0.508 J=0.169
+[2026-07-29 06:43:56]     thr=0.50: Sens=0.721 Spec=0.484 PPV=0.400 NPV=0.785 F1=0.515 J=0.206
+[2026-07-29 06:43:56]     thr=0.60: Sens=0.672 Spec=0.547 PPV=0.414 NPV=0.778 F1=0.512 J=0.219
+[2026-07-29 06:43:57]     thr=0.70: Sens=0.590 Spec=0.617 PPV=0.424 NPV=0.760 F1=0.493 J=0.207
+[2026-07-29 06:43:57]     thr=0.80: Sens=0.525 Spec=0.656 PPV=0.421 NPV=0.743 F1=0.467 J=0.181
+[2026-07-29 06:43:57] 
+  Optimal threshold (Youden's J): 0.60 (J=0.219)
+[2026-07-29 06:43:57] 
+  ── Metrics at Optimal Threshold (0.6) ──
+[2026-07-29 06:43:58] 
+  ── Calibration Analysis ──
+[2026-07-29 06:43:58]     ECE: 0.3101
+[2026-07-29 06:43:58]     MCE: 0.6173
+[2026-07-29 06:43:58]     Brier: 0.3358
+[2026-07-29 06:43:58]       bin [0.00–0.10]: observed=0.160 expected=0.045
+[2026-07-29 06:43:58]       bin [0.10–0.20]: observed=0.250 expected=0.146
+[2026-07-29 06:43:58]       bin [0.20–0.30]: observed=0.200 expected=0.251
+[2026-07-29 06:43:58]       bin [0.30–0.40]: observed=0.333 expected=0.351
+[2026-07-29 06:43:58]       bin [0.40–0.50]: observed=0.214 expected=0.465
+[2026-07-29 06:43:58]       bin [0.50–0.60]: observed=0.273 expected=0.565
+[2026-07-29 06:43:58]       bin [0.60–0.70]: observed=0.357 expected=0.650
+[2026-07-29 06:43:58]       bin [0.70–0.80]: observed=0.444 expected=0.765
+[2026-07-29 06:43:58]       bin [0.80–0.90]: observed=0.250 expected=0.867
+[2026-07-29 06:43:58]       bin [0.90–1.00]: observed=0.482 expected=0.966
+[2026-07-29 06:43:58] 
+  ── Subgroup Calibration ──
+[2026-07-29 06:43:59] 
+  ── Decision Curve Analysis ──
+[2026-07-29 06:43:59]     Max net benefit: 0.3107 at threshold 0.010
+[2026-07-29 06:43:59]     Net benefit at 0.10: 0.2387
+[2026-07-29 06:43:59]     Net benefit at 0.20: 0.1548
+[2026-07-29 06:43:59]     Net benefit at 0.30: 0.0763
+[2026-07-29 06:43:59]     Model beats treat-all for thresholds: [0.20, 0.98]
+[2026-07-29 06:43:59] 
+  ── Uncertainty Analysis ──
+[2026-07-29 06:43:59]     Mean predicted risk: -0.9057
+[2026-07-29 06:43:59]     Mean uncertainty (σ): 0.7670
+[2026-07-29 06:43:59]     Median σ: 0.1699
+[2026-07-29 06:43:59]     High-uncertainty (n=94): mean risk=0.6138, true rate=0.2872
+[2026-07-29 06:43:59]     Low-uncertainty  (n=95): mean risk=0.5563, true rate=0.3579
+[2026-07-29 06:43:59] 
+  ── Survival Analysis ──
+[2026-07-29 06:43:59]     Survival curve shape: (189, 13)
+[2026-07-29 06:43:59]     Mean survival at t=0: 1.0000
+[2026-07-29 06:43:59]     Mean survival at t=end: 0.0000
+[2026-07-29 06:43:59] 
+  ── Risk Stratification ──
+[2026-07-29 06:43:59]     [0.00, 0.05): n=  15 prevalence=0.200
+[2026-07-29 06:43:59]     [0.05, 0.15): n=  19 prevalence=0.211
+[2026-07-29 06:43:59]     [0.15, 0.30): n=  22 prevalence=0.182
+[2026-07-29 06:43:59]     [0.30, 0.50): n=  23 prevalence=0.261
+[2026-07-29 06:43:59]     [0.50, 1.01): n= 110 prevalence=0.400
+[2026-07-29 06:43:59] 
+  ── Prediction Distribution ──
+[2026-07-29 06:43:59]     Risk range: [0.0027, 0.9993]
+[2026-07-29 06:43:59]     Risk mean±std: 0.5849 ± 0.3485
+[2026-07-29 06:43:59]     Percentiles: p10=0.0683 p25=0.2409 p50=0.6163 p75=0.9380 p90=0.9861
+[2026-07-29 06:43:59] 
+  ── Bootstrap 95% CIs ──
+[2026-07-29 06:43:59]     AUROC: 0.6534 [0.5878, 0.7389]
+[2026-07-29 06:43:59]     AUPRC: 0.5091 [0.3943, 0.6480]
+[2026-07-29 06:43:59]     Sens@0.5: 0.7213 [0.6000, 0.8361]
+[2026-07-29 06:43:59]     Spec@0.5: 0.4844 [0.4030, 0.5764]
+[2026-07-29 06:43:59] 
+  Results saved: results/evaluation_results.json
+[2026-07-29 06:44:00] 
+  Final model saved: models/ohca_model_final.weights.h5
+[2026-07-29 06:44:00]   Config saved: models/config.json
+[2026-07-29 06:44:00] 
+  To use the model:
+[2026-07-29 06:44:00]     from ohca_predictor.pipeline import OHCAPredictorPipeline
+[2026-07-29 06:44:00]     pipe = OHCAPredictorPipeline.load('models/ohca_model_final.weights.h5')
+[2026-07-29 06:44:00]     result = pipe.predict(ecg=ecg, accelerometer=accel, ppg=ppg, ...)
+[2026-07-29 06:44:00]     print(result.risk, result.uncertainty, result.high_risk)
+[2026-07-29 06:44:00] 
+======================================================================
+[2026-07-29 06:44:00] PIPELINE COMPLETE
+[2026-07-29 06:44:00]   Total time: 0.50h (1784s)
+[2026-07-29 06:44:00]   Best validation AUROC: 0.6178
+[2026-07-29 06:44:00]   Results: results/evaluation_results.json
+[2026-07-29 06:44:00]   TensorBoard: logs/pipeline/tensorboard
+[2026-07-29 06:44:00]   Model: models/ohca_model_final.weights.h5
+[2026-07-29 06:44:00] ======================================================================

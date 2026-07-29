@@ -304,3 +304,139 @@
 [2026-07-28 12:06:02]   TensorBoard: logs/pipeline/tensorboard
 [2026-07-28 12:06:02]   Model: models/ohca_model_final.weights.h5
 [2026-07-28 12:06:02] ======================================================================
+
+v2 Training:
+
+2026-07-28 14:30:54,552 | Epoch 1/300 | train_loss=4.9444 val_loss=3.2485 | AUROC=0.443 [0.367–0.528] AUPRC=0.244 Acc(opt)=0.718@thr=0.98 | Sens=0.019 Spec=0.881 PPV=0.059 F1=0.029 | Brier=0.3036 ECE=0.2872 uncert=5.08 lr=4.00e-06 (0s)
+2026-07-28 14:30:56,545 | ★ New best AUROC=0.4429 → saved checkpoint
+2026-07-28 14:34:41,596 | Epoch 2/300 | train_loss=4.5905 val_loss=2.8335 | AUROC=0.469 [0.388–0.564] AUPRC=0.258 Acc(opt)=0.718@thr=0.97 | Sens=0.113 Spec=0.859 PPV=0.240 F1=0.154 | Brier=0.2960 ECE=0.2799 uncert=4.81 lr=9.33e-06 (0s)
+2026-07-28 14:34:42,839 | ★ New best AUROC=0.4693 → saved checkpoint
+2026-07-28 14:38:27,569 | Epoch 3/300 | train_loss=5.3064 val_loss=2.6355 | AUROC=0.513 [0.425–0.604] AUPRC=0.289 Acc(opt)=0.718@thr=0.89 | Sens=0.094 Spec=0.889 PPV=0.250 F1=0.137 | Brier=0.2776 ECE=0.2574 uncert=2.72 lr=1.33e-05 (0s)
+2026-07-28 14:38:28,906 | ★ New best AUROC=0.5129 → saved checkpoint
+2026-07-28 14:41:58,879 | Epoch 4/300 | train_loss=3.9602 val_loss=2.0312 | AUROC=0.539 [0.450–0.640] AUPRC=0.301 Acc(opt)=0.718@thr=0.96 | Sens=0.170 Spec=0.822 PPV=0.273 F1=0.209 | Brier=0.2765 ECE=0.2440 uncert=1.29 lr=1.87e-05 (0s)
+2026-07-28 14:42:00,104 | ★ New best AUROC=0.5395 → saved checkpoint
+2026-07-28 14:44:49,434 | Epoch 5/300 | train_loss=3.8263 val_loss=1.5074 | AUROC=0.557 [0.472–0.654] AUPRC=0.313 Acc(opt)=0.718@thr=1.00 | Sens=0.396 Spec=0.667 PPV=0.318 F1=0.353 | Brier=0.2924 ECE=0.2419 uncert=0.63 lr=2.27e-05 (0s)
+2026-07-28 14:44:50,604 | ★ New best AUROC=0.5571 → saved checkpoint
+2026-07-28 15:04:22,181 | Epoch 1/300 | train_loss=3.2537 val_loss=1.6610 | AUROC=0.533 [0.420–0.622] AUPRC=0.344 Acc(opt)=0.723@thr=0.87 | Sens=0.283 Spec=0.770 PPV=0.326 F1=0.303 | Brier=0.2609 ECE=0.2323 uncert=0.34 lr=4.00e-06 (0s)
+2026-07-28 15:04:24,076 | ★ New best AUROC=0.5332 → saved checkpoint
+2026-07-28 15:08:16,799 | Epoch 2/300 | train_loss=2.8572 val_loss=1.7439 | AUROC=0.507 [0.404–0.593] AUPRC=0.332 Acc(opt)=0.729@thr=0.98 | Sens=0.245 Spec=0.726 PPV=0.260 F1=0.252 | Brier=0.2903 ECE=0.2589 uncert=0.97 lr=9.33e-06 (0s)
+2026-07-28 15:12:19,496 | Epoch 3/300 | train_loss=2.4552 val_loss=1.5313 | AUROC=0.504 [0.425–0.584] AUPRC=0.305 Acc(opt)=0.718@thr=0.99 | Sens=0.321 Spec=0.667 PPV=0.274 F1=0.296 | Brier=0.3156 ECE=0.2867 uncert=0.63 lr=1.33e-05 (0s)
+2026-07-28 15:15:55,931 | Epoch 4/300 | train_loss=2.4823 val_loss=1.3573 | AUROC=0.536 [0.460–0.618] AUPRC=0.344 Acc(opt)=0.723@thr=0.98 | Sens=0.415 Spec=0.644 PPV=0.314 F1=0.358 | Brier=0.3054 ECE=0.2767 uncert=0.17 lr=1.87e-05 (0s)
+2026-07-28 15:15:57,226 | ★ New best AUROC=0.5361 → saved checkpoint
+2026-07-28 15:20:03,987 | Epoch 5/300 | train_loss=1.7271 val_loss=1.3114 | AUROC=0.568 [0.484–0.642] AUPRC=0.359 Acc(opt)=0.723@thr=0.93 | Sens=0.377 Spec=0.667 PPV=0.308 F1=0.339 | Brier=0.2932 ECE=0.2614 uncert=0.08 lr=2.27e-05 (0s)
+2026-07-28 15:20:04,871 | ★ New best AUROC=0.5677 → saved checkpoint
+2026-07-28 15:23:52,207 | Epoch 6/300 | train_loss=2.2309 val_loss=1.3093 | AUROC=0.560 [0.467–0.632] AUPRC=0.355 Acc(opt)=0.723@thr=0.95 | Sens=0.358 Spec=0.696 PPV=0.317 F1=0.336 | Brier=0.2943 ECE=0.2611 uncert=0.07 lr=2.80e-05 (0s)
+2026-07-28 15:27:06,106 | Epoch 7/300 | train_loss=2.7454 val_loss=1.3101 | AUROC=0.553 [0.459–0.628] AUPRC=0.362 Acc(opt)=0.729@thr=0.97 | Sens=0.340 Spec=0.667 PPV=0.286 F1=0.310 | Brier=0.2931 ECE=0.2596 uncert=0.09 lr=3.20e-05 (0s)
+2026-07-28 15:30:35,607 | Epoch 8/300 | train_loss=2.4528 val_loss=1.3612 | AUROC=0.548 [0.460–0.625] AUPRC=0.359 Acc(opt)=0.723@thr=0.88 | Sens=0.302 Spec=0.689 PPV=0.276 F1=0.288 | Brier=0.2796 ECE=0.2654 uncert=0.11 lr=3.73e-05 (0s)
+2026-07-28 15:31:13,922 | Epoch 9/300 | train_loss=8.8179 val_loss=1.3623 | AUROC=0.548 [0.460–0.624] AUPRC=0.359 Acc(opt)=0.729@thr=0.88 | Sens=0.302 Spec=0.689 PPV=0.276 F1=0.288 | Brier=0.2793 ECE=0.2652 uncert=0.11 lr=3.73e-05 (0s)
+2026-07-28 15:31:46,615 | Epoch 10/300 | train_loss=2.3146 val_loss=1.3380 | AUROC=0.548 [0.466–0.630] AUPRC=0.360 Acc(opt)=0.723@thr=0.91 | Sens=0.321 Spec=0.719 PPV=0.309 F1=0.315 | Brier=0.2727 ECE=0.2550 uncert=0.14 lr=4.13e-05 (0s)
+2026-07-28 15:32:17,121 | Epoch 11/300 | train_loss=2.0896 val_loss=1.2669 | AUROC=0.555 [0.478–0.653] AUPRC=0.371 Acc(opt)=0.723@thr=0.88 | Sens=0.340 Spec=0.711 PPV=0.316 F1=0.327 | Brier=0.2656 ECE=0.2258 uncert=0.15 lr=4.67e-05 (0s)
+2026-07-28 15:32:50,134 | Epoch 12/300 | train_loss=2.3036 val_loss=1.3124 | AUROC=0.566 [0.484–0.659] AUPRC=0.370 Acc(opt)=0.723@thr=0.73 | Sens=0.321 Spec=0.793 PPV=0.378 F1=0.347 | Brier=0.2488 ECE=0.2079 uncert=0.22 lr=5.07e-05 (0s)
+2026-07-28 15:33:22,222 | Epoch 13/300 | train_loss=1.8443 val_loss=1.5018 | AUROC=0.569 [0.485–0.664] AUPRC=0.369 Acc(opt)=0.729@thr=0.63 | Sens=0.283 Spec=0.859 PPV=0.441 F1=0.345 | Brier=0.2320 ECE=0.1735 uncert=0.34 lr=5.60e-05 (0s)
+2026-07-28 15:33:23,370 | ★ New best AUROC=0.5694 → saved checkpoint
+2026-07-28 15:33:56,055 | Epoch 14/300 | train_loss=2.0465 val_loss=1.8661 | AUROC=0.568 [0.486–0.668] AUPRC=0.359 Acc(opt)=0.723@thr=0.36 | Sens=0.132 Spec=0.941 PPV=0.467 F1=0.206 | Brier=0.2281 ECE=0.1439 uncert=0.41 lr=6.00e-05 (0s)
+2026-07-28 15:34:28,537 | Epoch 15/300 | train_loss=3.0088 val_loss=1.6235 | AUROC=0.567 [0.485–0.672] AUPRC=0.354 Acc(opt)=0.729@thr=0.66 | Sens=0.170 Spec=0.904 PPV=0.409 F1=0.240 | Brier=0.2297 ECE=0.1569 uncert=0.44 lr=6.53e-05 (0s)
+2026-07-28 15:35:00,579 | Epoch 16/300 | train_loss=2.0457 val_loss=1.3345 | AUROC=0.567 [0.489–0.667] AUPRC=0.351 Acc(opt)=0.718@thr=0.75 | Sens=0.283 Spec=0.800 PPV=0.357 F1=0.316 | Brier=0.2402 ECE=0.1765 uncert=0.44 lr=6.93e-05 (0s)
+2026-07-28 15:35:33,449 | Epoch 17/300 | train_loss=2.0138 val_loss=1.1945 | AUROC=0.592 [0.519–0.692] AUPRC=0.364 Acc(opt)=0.718@thr=0.73 | Sens=0.358 Spec=0.756 PPV=0.365 F1=0.362 | Brier=0.2386 ECE=0.1835 uncert=0.44 lr=7.47e-05 (0s)
+2026-07-28 15:35:34,407 | ★ New best AUROC=0.5920 → saved checkpoint
+2026-07-28 15:35:58,008 | Epoch 18/300 | train_loss=0.1234 val_loss=1.1956 | AUROC=0.592 [0.518–0.693] AUPRC=0.363 Acc(opt)=0.718@thr=0.72 | Sens=0.340 Spec=0.756 PPV=0.353 F1=0.346 | Brier=0.2384 ECE=0.1787 uncert=0.45 lr=7.47e-05 (0s)
+2026-07-28 15:36:30,976 | Epoch 19/300 | train_loss=1.9890 val_loss=1.1276 | AUROC=0.616 [0.545–0.727] AUPRC=0.410 Acc(opt)=0.734@thr=0.65 | Sens=0.396 Spec=0.770 PPV=0.404 F1=0.400 | Brier=0.2308 ECE=0.1630 uncert=0.31 lr=8.00e-05 (0s)
+2026-07-28 15:36:32,135 | ★ New best AUROC=0.6164 → saved checkpoint
+2026-07-28 15:37:04,603 | Epoch 20/300 | train_loss=2.3344 val_loss=1.0232 | AUROC=0.624 [0.537–0.736] AUPRC=0.441 Acc(opt)=0.761@thr=0.78 | Sens=0.491 Spec=0.689 PPV=0.382 F1=0.430 | Brier=0.2418 ECE=0.1778 uncert=0.31 lr=8.40e-05 (0s)
+2026-07-28 15:37:05,718 | ★ New best AUROC=0.6243 → saved checkpoint
+2026-07-28 15:37:06,772 | Checkpoint saved: models/checkpoint_epoch20.weights.h5
+2026-07-28 15:37:39,887 | Epoch 21/300 | train_loss=1.4764 val_loss=1.0499 | AUROC=0.648 [0.553–0.747] AUPRC=0.502 Acc(opt)=0.766@thr=0.78 | Sens=0.434 Spec=0.748 PPV=0.404 F1=0.418 | Brier=0.2178 ECE=0.1428 uncert=0.53 lr=8.93e-05 (0s)
+2026-07-28 15:37:41,022 | ★ New best AUROC=0.6485 → saved checkpoint
+2026-07-28 15:38:14,095 | Epoch 22/300 | train_loss=1.4155 val_loss=1.2922 | AUROC=0.653 [0.562–0.749] AUPRC=0.512 Acc(opt)=0.766@thr=0.53 | Sens=0.377 Spec=0.896 PPV=0.588 F1=0.460 | Brier=0.1946 ECE=0.1246 uncert=1.13 lr=9.33e-05 (0s)
+2026-07-28 15:38:15,155 | ★ New best AUROC=0.6531 → saved checkpoint
+2026-07-28 15:38:48,297 | Epoch 23/300 | train_loss=2.0749 val_loss=2.0273 | AUROC=0.657 [0.560–0.758] AUPRC=0.527 Acc(opt)=0.766@thr=0.28 | Sens=0.094 Spec=1.000 PPV=1.000 F1=0.172 | Brier=0.2115 ECE=0.1819 uncert=2.70 lr=9.87e-05 (0s)
+2026-07-28 15:38:49,327 | ★ New best AUROC=0.6572 → saved checkpoint
+2026-07-28 15:39:21,267 | Epoch 24/300 | train_loss=1.9708 val_loss=1.8417 | AUROC=0.665 [0.580–0.763] AUPRC=0.532 Acc(opt)=0.766@thr=0.35 | Sens=0.132 Spec=0.993 PPV=0.875 F1=0.230 | Brier=0.2050 ECE=0.1720 uncert=3.35 lr=1.03e-04 (0s)
+2026-07-28 15:39:22,409 | ★ New best AUROC=0.6647 → saved checkpoint
+2026-07-28 15:39:55,050 | Epoch 25/300 | train_loss=1.6536 val_loss=1.5085 | AUROC=0.668 [0.577–0.762] AUPRC=0.512 Acc(opt)=0.755@thr=0.62 | Sens=0.189 Spec=0.956 PPV=0.625 F1=0.290 | Brier=0.1974 ECE=0.1416 uncert=3.71 lr=1.08e-04 (0s)
+2026-07-28 15:39:56,180 | ★ New best AUROC=0.6681 → saved checkpoint
+2026-07-28 15:40:28,761 | Epoch 26/300 | train_loss=1.3608 val_loss=1.3219 | AUROC=0.659 [0.575–0.755] AUPRC=0.494 Acc(opt)=0.755@thr=0.62 | Sens=0.226 Spec=0.896 PPV=0.462 F1=0.304 | Brier=0.1985 ECE=0.1332 uncert=3.37 lr=1.12e-04 (0s)
+2026-07-28 15:40:52,821 | Epoch 27/300 | train_loss=3.2389 val_loss=1.3226 | AUROC=0.659 [0.575–0.754] AUPRC=0.494 Acc(opt)=0.755@thr=0.62 | Sens=0.226 Spec=0.896 PPV=0.462 F1=0.304 | Brier=0.1985 ECE=0.1335 uncert=3.39 lr=1.12e-04 (0s)
+2026-07-28 15:41:25,551 | Epoch 28/300 | train_loss=1.5118 val_loss=1.0260 | AUROC=0.655 [0.566–0.746] AUPRC=0.481 Acc(opt)=0.750@thr=0.87 | Sens=0.472 Spec=0.778 PPV=0.455 F1=0.463 | Brier=0.2176 ECE=0.1515 uncert=2.50 lr=1.17e-04 (0s)
+2026-07-28 15:41:57,924 | Epoch 29/300 | train_loss=1.6323 val_loss=1.2516 | AUROC=0.647 [0.558–0.750] AUPRC=0.472 Acc(opt)=0.750@thr=0.72 | Sens=0.358 Spec=0.874 PPV=0.528 F1=0.427 | Brier=0.2072 ECE=0.1348 uncert=2.73 lr=1.21e-04 (0s)
+2026-07-28 15:42:31,058 | Epoch 30/300 | train_loss=1.1735 val_loss=2.0887 | AUROC=0.631 [0.528–0.734] AUPRC=0.458 Acc(opt)=0.745@thr=0.50 | Sens=0.151 Spec=0.978 PPV=0.727 F1=0.250 | Brier=0.2204 ECE=0.2047 uncert=3.39 lr=1.27e-04 (0s)
+2026-07-28 15:43:03,811 | Epoch 31/300 | train_loss=1.4136 val_loss=2.7111 | AUROC=0.596 [0.494–0.697] AUPRC=0.425 Acc(opt)=0.729@thr=0.08 | Sens=0.038 Spec=0.985 PPV=0.500 F1=0.070 | Brier=0.2418 ECE=0.2266 uncert=3.15 lr=1.31e-04 (0s)
+2026-07-28 15:43:36,639 | Epoch 32/300 | train_loss=1.7256 val_loss=2.7833 | AUROC=0.573 [0.485–0.672] AUPRC=0.405 Acc(opt)=0.729@thr=0.47 | Sens=0.038 Spec=0.993 PPV=0.667 F1=0.071 | Brier=0.2457 ECE=0.2227 uncert=2.38 lr=1.36e-04 (0s)
+2026-07-28 15:44:08,583 | Epoch 33/300 | train_loss=1.8571 val_loss=1.4995 | AUROC=0.592 [0.505–0.680] AUPRC=0.426 Acc(opt)=0.739@thr=0.84 | Sens=0.170 Spec=0.919 PPV=0.450 F1=0.247 | Brier=0.2122 ECE=0.1243 uncert=2.30 lr=1.40e-04 (0s)
+2026-07-28 15:44:41,252 | Epoch 34/300 | train_loss=1.3957 val_loss=0.8870 | AUROC=0.607 [0.516–0.704] AUPRC=0.429 Acc(opt)=0.734@thr=0.91 | Sens=0.547 Spec=0.630 PPV=0.367 F1=0.439 | Brier=0.2547 ECE=0.2215 uncert=3.13 lr=1.45e-04 (0s)
+2026-07-28 15:45:11,543 | Epoch 35/300 | train_loss=1.2416 val_loss=1.0629 | AUROC=0.616 [0.526–0.713] AUPRC=0.429 Acc(opt)=0.734@thr=0.83 | Sens=0.377 Spec=0.844 PPV=0.488 F1=0.426 | Brier=0.2068 ECE=0.1139 uncert=5.17 lr=1.49e-04 (0s)
+2026-07-28 15:45:35,468 | Epoch 36/300 | train_loss=0.9871 val_loss=1.0641 | AUROC=0.616 [0.526–0.713] AUPRC=0.430 Acc(opt)=0.734@thr=0.81 | Sens=0.377 Spec=0.844 PPV=0.488 F1=0.426 | Brier=0.2068 ECE=0.1222 uncert=5.20 lr=1.49e-04 (0s)
+2026-07-28 15:46:07,869 | Epoch 37/300 | train_loss=1.5310 val_loss=1.0623 | AUROC=0.615 [0.524–0.712] AUPRC=0.428 Acc(opt)=0.734@thr=0.83 | Sens=0.377 Spec=0.844 PPV=0.488 F1=0.426 | Brier=0.2077 ECE=0.1150 uncert=5.17 lr=1.49e-04 (0s)
+2026-07-28 15:46:39,401 | Epoch 38/300 | train_loss=1.4869 val_loss=1.0713 | AUROC=0.615 [0.526–0.711] AUPRC=0.428 Acc(opt)=0.734@thr=0.83 | Sens=0.340 Spec=0.844 PPV=0.462 F1=0.391 | Brier=0.2077 ECE=0.1120 uncert=5.32 lr=1.49e-04 (0s)
+2026-07-28 15:47:11,708 | Epoch 39/300 | train_loss=1.3351 val_loss=1.0754 | AUROC=0.614 [0.526–0.709] AUPRC=0.428 Acc(opt)=0.734@thr=0.83 | Sens=0.340 Spec=0.844 PPV=0.462 F1=0.391 | Brier=0.2077 ECE=0.1076 uncert=5.35 lr=1.49e-04 (0s)
+2026-07-28 15:47:44,928 | Epoch 40/300 | train_loss=1.3716 val_loss=1.0756 | AUROC=0.612 [0.526–0.707] AUPRC=0.426 Acc(opt)=0.734@thr=0.82 | Sens=0.340 Spec=0.844 PPV=0.462 F1=0.391 | Brier=0.2079 ECE=0.1056 uncert=5.36 lr=1.49e-04 (0s)
+2026-07-28 15:47:46,012 | Checkpoint saved: models/checkpoint_epoch40.weights.h5
+2026-07-28 15:48:18,722 | Epoch 41/300 | train_loss=1.4630 val_loss=1.0814 | AUROC=0.613 [0.527–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.340 Spec=0.859 PPV=0.486 F1=0.400 | Brier=0.2076 ECE=0.1158 uncert=5.44 lr=1.49e-04 (0s)
+2026-07-28 15:49:09,977 | Epoch 42/300 | train_loss=1.7060 val_loss=1.0823 | AUROC=0.613 [0.527–0.709] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2078 ECE=0.1108 uncert=5.45 lr=1.49e-04 (0s)
+2026-07-28 15:49:42,386 | Epoch 43/300 | train_loss=1.3374 val_loss=1.0896 | AUROC=0.613 [0.528–0.709] AUPRC=0.425 Acc(opt)=0.734@thr=0.80 | Sens=0.340 Spec=0.859 PPV=0.486 F1=0.400 | Brier=0.2074 ECE=0.1158 uncert=5.60 lr=1.49e-04 (0s)
+2026-07-28 15:50:14,146 | Epoch 44/300 | train_loss=1.2367 val_loss=1.0840 | AUROC=0.612 [0.526–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2076 ECE=0.1137 uncert=5.49 lr=1.49e-04 (0s)
+2026-07-28 15:50:37,702 | Epoch 45/300 | train_loss=0.0174 val_loss=1.0847 | AUROC=0.612 [0.527–0.707] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2076 ECE=0.1136 uncert=5.51 lr=1.49e-04 (0s)
+2026-07-28 15:51:09,567 | Epoch 46/300 | train_loss=1.2329 val_loss=1.0778 | AUROC=0.612 [0.526–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.82 | Sens=0.340 Spec=0.852 PPV=0.474 F1=0.396 | Brier=0.2083 ECE=0.1044 uncert=5.40 lr=1.49e-04 (0s)
+2026-07-28 15:51:42,305 | Epoch 47/300 | train_loss=1.4779 val_loss=1.0836 | AUROC=0.613 [0.527–0.709] AUPRC=0.425 Acc(opt)=0.734@thr=0.82 | Sens=0.340 Spec=0.852 PPV=0.474 F1=0.396 | Brier=0.2082 ECE=0.1134 uncert=5.49 lr=1.49e-04 (0s)
+2026-07-28 15:52:14,143 | Epoch 48/300 | train_loss=1.0797 val_loss=1.0850 | AUROC=0.613 [0.527–0.709] AUPRC=0.425 Acc(opt)=0.734@thr=0.82 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2081 ECE=0.1124 uncert=5.48 lr=1.49e-04 (0s)
+2026-07-28 15:52:46,709 | Epoch 49/300 | train_loss=1.1913 val_loss=1.0820 | AUROC=0.612 [0.526–0.709] AUPRC=0.424 Acc(opt)=0.734@thr=0.82 | Sens=0.340 Spec=0.852 PPV=0.474 F1=0.396 | Brier=0.2083 ECE=0.1133 uncert=5.46 lr=1.49e-04 (0s)
+2026-07-28 15:53:19,358 | Epoch 50/300 | train_loss=1.7453 val_loss=1.0862 | AUROC=0.613 [0.527–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2079 ECE=0.1093 uncert=5.52 lr=1.49e-04 (0s)
+2026-07-28 15:53:52,644 | Epoch 51/300 | train_loss=1.3426 val_loss=1.0854 | AUROC=0.613 [0.527–0.709] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2079 ECE=0.1094 uncert=5.50 lr=1.49e-04 (0s)
+2026-07-28 15:54:25,759 | Epoch 52/300 | train_loss=1.2821 val_loss=1.0918 | AUROC=0.612 [0.526–0.706] AUPRC=0.424 Acc(opt)=0.734@thr=0.80 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2074 ECE=0.1035 uncert=5.63 lr=1.49e-04 (0s)
+2026-07-28 15:54:58,691 | Epoch 53/300 | train_loss=1.2842 val_loss=1.0852 | AUROC=0.612 [0.526–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2077 ECE=0.1092 uncert=5.50 lr=1.49e-04 (0s)
+2026-07-28 15:55:22,335 | Epoch 54/300 | train_loss=3.7543 val_loss=1.0863 | AUROC=0.613 [0.526–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.81 | Sens=0.321 Spec=0.859 PPV=0.472 F1=0.382 | Brier=0.2076 ECE=0.1094 uncert=5.53 lr=1.49e-04 (0s)
+2026-07-28 15:55:55,101 | Epoch 55/300 | train_loss=1.9015 val_loss=1.0787 | AUROC=0.612 [0.525–0.708] AUPRC=0.425 Acc(opt)=0.734@thr=0.82 | Sens=0.340 Spec=0.852 PPV=0.474 F1=0.396 | Brier=0.2083 ECE=0.1088 uncert=5.44 lr=1.49e-04 (0s)
+2026-07-28 15:55:55,144 | Early stopping at epoch 55
+2026-07-28 15:55:56,430 | You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
+2026-07-29 06:19:57,601 | Epoch 1/300 | train_loss=2.5142 val_loss=2.1477 | AUROC=0.521 [0.456–0.601] AUPRC=0.285 Acc(opt)=0.719@thr=0.99 | Sens=0.218 Spec=0.752 PPV=0.255 F1=0.235 | Brier=0.3075 ECE=0.2716 uncert=2.09 lr=7.00e-06 (0s)
+2026-07-29 06:19:58,905 | ★ New best AUROC=0.5210 → saved checkpoint
+2026-07-29 06:23:14,290 | Epoch 2/300 | train_loss=3.2165 val_loss=2.2939 | AUROC=0.480 [0.413–0.572] AUPRC=0.263 Acc(opt)=0.719@thr=1.00 | Sens=0.364 Spec=0.631 PPV=0.278 F1=0.315 | Brier=0.3584 ECE=0.3321 uncert=2.36 lr=1.40e-05 (0s)
+2026-07-29 06:26:22,240 | Epoch 3/300 | train_loss=2.2533 val_loss=2.1717 | AUROC=0.486 [0.408–0.571] AUPRC=0.275 Acc(opt)=0.719@thr=1.00 | Sens=0.455 Spec=0.525 PPV=0.272 F1=0.340 | Brier=0.3915 ECE=0.3894 uncert=2.00 lr=2.10e-05 (0s)
+2026-07-29 06:29:51,160 | Epoch 4/300 | train_loss=2.7489 val_loss=1.9242 | AUROC=0.533 [0.450–0.629] AUPRC=0.316 Acc(opt)=0.719@thr=1.00 | Sens=0.564 Spec=0.511 PPV=0.310 F1=0.400 | Brier=0.3804 ECE=0.3888 uncert=1.57 lr=2.80e-05 (0s)
+2026-07-29 06:29:52,147 | ★ New best AUROC=0.5332 → saved checkpoint
+2026-07-29 06:30:00,969 | Epoch 5/300 | train_loss=0.0000 val_loss=1.9242 | AUROC=0.533 [0.450–0.629] AUPRC=0.316 Acc(opt)=0.719@thr=1.00 | Sens=0.564 Spec=0.511 PPV=0.310 F1=0.400 | Brier=0.3804 ECE=0.3888 uncert=1.57 lr=2.80e-05 (0s)
+2026-07-29 06:30:29,970 | Epoch 6/300 | train_loss=2.6842 val_loss=1.6707 | AUROC=0.555 [0.468–0.649] AUPRC=0.368 Acc(opt)=0.730@thr=0.99 | Sens=0.636 Spec=0.482 PPV=0.324 F1=0.429 | Brier=0.3815 ECE=0.3674 uncert=1.38 lr=3.50e-05 (0s)
+2026-07-29 06:30:30,973 | ★ New best AUROC=0.5551 → saved checkpoint
+2026-07-29 06:31:05,072 | Epoch 7/300 | train_loss=2.7997 val_loss=1.4880 | AUROC=0.568 [0.476–0.664] AUPRC=0.374 Acc(opt)=0.724@thr=0.99 | Sens=0.709 Spec=0.433 PPV=0.328 F1=0.448 | Brier=0.3977 ECE=0.3945 uncert=1.34 lr=4.20e-05 (0s)
+2026-07-29 06:31:07,088 | ★ New best AUROC=0.5681 → saved checkpoint
+2026-07-29 06:31:34,864 | Epoch 8/300 | train_loss=2.2050 val_loss=1.3676 | AUROC=0.588 [0.501–0.679] AUPRC=0.390 Acc(opt)=0.730@thr=0.99 | Sens=0.764 Spec=0.369 PPV=0.321 F1=0.452 | Brier=0.4080 ECE=0.4185 uncert=1.19 lr=4.90e-05 (0s)
+2026-07-29 06:31:35,879 | ★ New best AUROC=0.5879 → saved checkpoint
+2026-07-29 06:31:57,822 | Epoch 9/300 | train_loss=2.3791 val_loss=1.2690 | AUROC=0.608 [0.518–0.700] AUPRC=0.403 Acc(opt)=0.730@thr=0.99 | Sens=0.836 Spec=0.340 PPV=0.331 F1=0.474 | Brier=0.4174 ECE=0.4335 uncert=1.13 lr=5.60e-05 (0s)
+2026-07-29 06:31:58,871 | ★ New best AUROC=0.6077 → saved checkpoint
+2026-07-29 06:32:10,039 | Epoch 10/300 | train_loss=0.0000 val_loss=1.2690 | AUROC=0.608 [0.518–0.700] AUPRC=0.403 Acc(opt)=0.730@thr=0.99 | Sens=0.836 Spec=0.340 PPV=0.331 F1=0.474 | Brier=0.4174 ECE=0.4335 uncert=1.13 lr=5.60e-05 (0s)
+2026-07-29 06:32:34,340 | Epoch 11/300 | train_loss=2.4248 val_loss=1.1595 | AUROC=0.618 [0.535–0.707] AUPRC=0.421 Acc(opt)=0.735@thr=0.99 | Sens=0.709 Spec=0.454 PPV=0.336 F1=0.456 | Brier=0.3628 ECE=0.3534 uncert=1.11 lr=6.30e-05 (0s)
+2026-07-29 06:32:35,353 | ★ New best AUROC=0.6178 → saved checkpoint
+2026-07-29 06:33:00,695 | Epoch 12/300 | train_loss=2.5100 val_loss=1.1518 | AUROC=0.617 [0.531–0.702] AUPRC=0.400 Acc(opt)=0.724@thr=0.97 | Sens=0.655 Spec=0.511 PPV=0.343 F1=0.450 | Brier=0.3252 ECE=0.3141 uncert=1.26 lr=7.00e-05 (0s)
+2026-07-29 06:33:26,184 | Epoch 13/300 | train_loss=2.1037 val_loss=1.1184 | AUROC=0.614 [0.525–0.703] AUPRC=0.397 Acc(opt)=0.730@thr=0.96 | Sens=0.655 Spec=0.504 PPV=0.340 F1=0.447 | Brier=0.3204 ECE=0.3120 uncert=1.51 lr=7.70e-05 (0s)
+2026-07-29 06:33:51,200 | Epoch 14/300 | train_loss=2.3050 val_loss=1.0688 | AUROC=0.600 [0.503–0.685] AUPRC=0.388 Acc(opt)=0.730@thr=0.96 | Sens=0.709 Spec=0.482 PPV=0.348 F1=0.467 | Brier=0.3139 ECE=0.2865 uncert=1.60 lr=8.40e-05 (0s)
+2026-07-29 06:34:02,011 | Epoch 15/300 | train_loss=0.0000 val_loss=1.0688 | AUROC=0.600 [0.503–0.685] AUPRC=0.388 Acc(opt)=0.730@thr=0.96 | Sens=0.709 Spec=0.482 PPV=0.348 F1=0.467 | Brier=0.3139 ECE=0.2865 uncert=1.60 lr=8.40e-05 (0s)
+2026-07-29 06:34:27,355 | Epoch 16/300 | train_loss=2.1349 val_loss=1.0859 | AUROC=0.594 [0.493–0.680] AUPRC=0.375 Acc(opt)=0.730@thr=0.98 | Sens=0.582 Spec=0.560 PPV=0.340 F1=0.430 | Brier=0.2906 ECE=0.2459 uncert=1.66 lr=9.10e-05 (0s)
+2026-07-29 06:34:53,311 | Epoch 17/300 | train_loss=2.4544 val_loss=1.0331 | AUROC=0.578 [0.484–0.661] AUPRC=0.350 Acc(opt)=0.730@thr=0.98 | Sens=0.618 Spec=0.525 PPV=0.337 F1=0.436 | Brier=0.3138 ECE=0.2731 uncert=1.88 lr=9.80e-05 (0s)
+2026-07-29 06:35:18,867 | Epoch 18/300 | train_loss=2.1145 val_loss=1.0457 | AUROC=0.559 [0.477–0.638] AUPRC=0.329 Acc(opt)=0.724@thr=0.98 | Sens=0.582 Spec=0.518 PPV=0.320 F1=0.413 | Brier=0.3163 ECE=0.2808 uncert=2.01 lr=1.05e-04 (0s)
+2026-07-29 06:35:43,782 | Epoch 19/300 | train_loss=2.0403 val_loss=1.1225 | AUROC=0.581 [0.502–0.669] AUPRC=0.335 Acc(opt)=0.719@thr=0.97 | Sens=0.418 Spec=0.667 PPV=0.329 F1=0.368 | Brier=0.2762 ECE=0.2142 uncert=1.93 lr=1.12e-04 (0s)
+2026-07-29 06:35:52,779 | Epoch 20/300 | train_loss=0.0000 val_loss=1.1225 | AUROC=0.581 [0.502–0.669] AUPRC=0.335 Acc(opt)=0.719@thr=0.97 | Sens=0.418 Spec=0.667 PPV=0.329 F1=0.368 | Brier=0.2762 ECE=0.2142 uncert=1.93 lr=1.12e-04 (0s)
+2026-07-29 06:35:53,743 | Checkpoint saved: models/checkpoint_epoch20.weights.h5
+2026-07-29 06:36:18,807 | Epoch 21/300 | train_loss=1.9866 val_loss=1.1253 | AUROC=0.586 [0.504–0.672] AUPRC=0.339 Acc(opt)=0.719@thr=0.95 | Sens=0.400 Spec=0.667 PPV=0.319 F1=0.355 | Brier=0.2723 ECE=0.2008 uncert=1.99 lr=1.12e-04 (0s)
+2026-07-29 06:36:44,305 | Epoch 22/300 | train_loss=2.3248 val_loss=1.1339 | AUROC=0.587 [0.508–0.678] AUPRC=0.343 Acc(opt)=0.719@thr=0.96 | Sens=0.382 Spec=0.674 PPV=0.313 F1=0.344 | Brier=0.2698 ECE=0.2017 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:37:09,029 | Epoch 23/300 | train_loss=1.7541 val_loss=1.1358 | AUROC=0.593 [0.516–0.688] AUPRC=0.347 Acc(opt)=0.724@thr=0.97 | Sens=0.382 Spec=0.674 PPV=0.313 F1=0.344 | Brier=0.2671 ECE=0.1932 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:37:33,829 | Epoch 24/300 | train_loss=1.8474 val_loss=1.1376 | AUROC=0.596 [0.521–0.692] AUPRC=0.351 Acc(opt)=0.724@thr=0.96 | Sens=0.382 Spec=0.681 PPV=0.318 F1=0.347 | Brier=0.2639 ECE=0.2016 uncert=1.97 lr=1.12e-04 (0s)
+2026-07-29 06:37:44,278 | Epoch 25/300 | train_loss=0.0000 val_loss=1.1376 | AUROC=0.596 [0.521–0.692] AUPRC=0.351 Acc(opt)=0.724@thr=0.96 | Sens=0.382 Spec=0.681 PPV=0.318 F1=0.347 | Brier=0.2639 ECE=0.2016 uncert=1.97 lr=1.12e-04 (0s)
+2026-07-29 06:38:08,041 | Epoch 26/300 | train_loss=2.4460 val_loss=1.1398 | AUROC=0.600 [0.525–0.698] AUPRC=0.354 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.681 PPV=0.308 F1=0.333 | Brier=0.2614 ECE=0.2307 uncert=1.97 lr=1.12e-04 (0s)
+2026-07-29 06:38:29,740 | Epoch 27/300 | train_loss=2.0480 val_loss=1.1417 | AUROC=0.601 [0.522–0.700] AUPRC=0.355 Acc(opt)=0.724@thr=0.96 | Sens=0.382 Spec=0.681 PPV=0.318 F1=0.347 | Brier=0.2605 ECE=0.2117 uncert=1.96 lr=1.12e-04 (0s)
+2026-07-29 06:38:52,404 | Epoch 28/300 | train_loss=1.7530 val_loss=1.1384 | AUROC=0.603 [0.521–0.700] AUPRC=0.355 Acc(opt)=0.724@thr=0.96 | Sens=0.400 Spec=0.681 PPV=0.328 F1=0.361 | Brier=0.2589 ECE=0.2015 uncert=1.96 lr=1.12e-04 (0s)
+2026-07-29 06:39:16,684 | Epoch 29/300 | train_loss=1.9275 val_loss=1.1393 | AUROC=0.605 [0.521–0.703] AUPRC=0.368 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.688 PPV=0.312 F1=0.336 | Brier=0.2575 ECE=0.2092 uncert=1.97 lr=1.12e-04 (0s)
+2026-07-29 06:39:27,658 | Epoch 30/300 | train_loss=0.0000 val_loss=1.1393 | AUROC=0.605 [0.521–0.703] AUPRC=0.368 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.688 PPV=0.312 F1=0.336 | Brier=0.2575 ECE=0.2092 uncert=1.97 lr=1.12e-04 (0s)
+2026-07-29 06:39:53,197 | Epoch 31/300 | train_loss=2.0189 val_loss=1.1411 | AUROC=0.605 [0.521–0.705] AUPRC=0.369 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.688 PPV=0.312 F1=0.336 | Brier=0.2565 ECE=0.2061 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:40:18,289 | Epoch 32/300 | train_loss=2.0308 val_loss=1.1417 | AUROC=0.605 [0.521–0.704] AUPRC=0.368 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.688 PPV=0.312 F1=0.336 | Brier=0.2565 ECE=0.2097 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:40:42,862 | Epoch 33/300 | train_loss=2.0700 val_loss=1.1384 | AUROC=0.605 [0.521–0.704] AUPRC=0.369 Acc(opt)=0.724@thr=0.96 | Sens=0.382 Spec=0.688 PPV=0.323 F1=0.350 | Brier=0.2558 ECE=0.1938 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:41:07,191 | Epoch 34/300 | train_loss=1.9297 val_loss=1.1399 | AUROC=0.606 [0.521–0.705] AUPRC=0.369 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2552 ECE=0.2002 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:41:17,982 | Epoch 35/300 | train_loss=0.0000 val_loss=1.1399 | AUROC=0.606 [0.521–0.705] AUPRC=0.369 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2552 ECE=0.2002 uncert=1.98 lr=1.12e-04 (0s)
+2026-07-29 06:41:43,348 | Epoch 36/300 | train_loss=2.0474 val_loss=1.1417 | AUROC=0.607 [0.519–0.705] AUPRC=0.376 Acc(opt)=0.730@thr=0.97 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2547 ECE=0.1933 uncert=2.00 lr=1.12e-04 (0s)
+2026-07-29 06:42:06,741 | Epoch 37/300 | train_loss=1.7027 val_loss=1.1408 | AUROC=0.606 [0.519–0.705] AUPRC=0.370 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2551 ECE=0.2102 uncert=1.99 lr=1.12e-04 (0s)
+2026-07-29 06:42:29,968 | Epoch 38/300 | train_loss=1.7062 val_loss=1.1378 | AUROC=0.606 [0.518–0.704] AUPRC=0.370 Acc(opt)=0.724@thr=0.96 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2548 ECE=0.2099 uncert=1.99 lr=1.12e-04 (0s)
+2026-07-29 06:42:54,490 | Epoch 39/300 | train_loss=1.9504 val_loss=1.1419 | AUROC=0.606 [0.519–0.705] AUPRC=0.370 Acc(opt)=0.724@thr=0.95 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2543 ECE=0.1960 uncert=1.99 lr=1.12e-04 (0s)
+2026-07-29 06:43:06,257 | Epoch 40/300 | train_loss=0.0000 val_loss=1.1419 | AUROC=0.606 [0.519–0.705] AUPRC=0.370 Acc(opt)=0.724@thr=0.95 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2543 ECE=0.1960 uncert=1.99 lr=1.12e-04 (0s)
+2026-07-29 06:43:07,239 | Checkpoint saved: models/checkpoint_epoch40.weights.h5
+2026-07-29 06:43:31,145 | Epoch 41/300 | train_loss=1.8130 val_loss=1.1453 | AUROC=0.606 [0.518–0.704] AUPRC=0.375 Acc(opt)=0.724@thr=0.95 | Sens=0.364 Spec=0.695 PPV=0.317 F1=0.339 | Brier=0.2541 ECE=0.2002 uncert=2.00 lr=1.12e-04 (0s)
+2026-07-29 06:43:31,185 | Early stopping at epoch 41
+2026-07-29 06:43:32,494 | You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 

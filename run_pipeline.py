@@ -121,17 +121,17 @@ def make_config():
             min_window_duration_hours=0.05,
             max_window_duration_hours=0.12,
             population_size=1000,
-            prevalence_ohca=0.15,
+            prevalence_ohca=0.10,
         ),
         training=TrainingConfig(
-            batch_size=4,
+            batch_size=8,
             epochs=300,
-            learning_rate=4e-4,
+            learning_rate=3e-4,
             warmup_steps=300,
             min_learning_rate=1e-6,
             mixed_precision=True,
             gradient_clip_norm=0.5,
-            gradient_accumulation_steps=8,
+            gradient_accumulation_steps=4,
             focal_loss_gamma=2.0,
             false_negative_weight=5.0,
             false_positive_weight=1.0,
@@ -144,14 +144,14 @@ def make_config():
             weight_decay=0.01,
         ),
         model=ModelConfig(
-            model_dim=192,
+            model_dim=128,
             num_attention_heads=8,
-            num_encoder_layers=6,
-            feedforward_dim=512,
-            dropout_rate=0.2,
-            attention_dropout_rate=0.1,
+            num_encoder_layers=4,
+            feedforward_dim=256,
+            dropout_rate=0.3,
+            attention_dropout_rate=0.15,
             static_embedding_dim=64,
-            tokens_per_modality=128,
+            tokens_per_modality=64,
             max_positional_encoding=4096,
             num_survival_bins=12,
             uncertainty_samples=5,
@@ -554,11 +554,11 @@ def phase2_train(config, train_samples, val_samples):
     # 2. Build the datasets EXACTLY ONCE and prepare them straight for training
     train_ds = create_padded_dataset(
         train_samples, batch_size=config.training.batch_size, shuffle=True,
-    ).prefetch(tf.data.AUTOTUNE)
+    ).cache().prefetch(buffer_size=16)
 
     val_ds = create_padded_dataset(
         val_samples, batch_size=config.training.batch_size, shuffle=False,
-    ).cache().prefetch(tf.data.AUTOTUNE)
+    ).cache().prefetch(buffer_size=16)
 
     # Now train_ds and val_ds are perfectly fresh and ready for model.fit()!
 
@@ -635,7 +635,7 @@ def phase2_train(config, train_samples, val_samples):
         epochs=config.training.epochs,
         steps_per_epoch=steps_per_epoch, 
         callbacks=[clinical_cb],
-        verbose=1
+        verbose=0
     )
 
     total_train_time = time.time() - t_train_start
