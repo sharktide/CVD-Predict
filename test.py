@@ -1,7 +1,6 @@
 from ohca_predictor.pipeline import OHCAPredictorPipeline
-from types import type
-pipe = OHCAPredictorPipeline.load("models/ohca_predictor_final.weights.h5")
-pipe.predict(...)
+pipe = OHCAPredictorPipeline.load("models/v1/best_checkpoint.weights.h5")
+# pipe.predict(...)
 # call signature (ecg: ndarray[_AnyShape, dtype[Any]], accelerometer: ndarray[_AnyShape, dtype[Any]], ppg: ndarray[_AnyShape, dtype[Any]], demographics: ndarray[_AnyShape, dtype[Any]], medications: ndarray[_AnyShape, dtype[Any]], comorbidities: ndarray[_AnyShape, dtype[Any]], lab_values: ndarray[_AnyShape, dtype[Any]]) -> OHCAResult
 
 # OHCAResult Dataclass:

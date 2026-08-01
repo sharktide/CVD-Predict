@@ -7,3 +7,4 @@ ohca_predictor.egg-info
 *.pyc
 __pycache__/
 pipeline_data.pkl
+build
