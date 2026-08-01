@@ -1,0 +1,96 @@
+import os, warnings
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+warnings.filterwarnings("ignore")
+
+import joblib
+import numpy as np
+import tensorflow as tf
+
+print("Step 1: Loading model...", flush=True)
+from ohca_predictor.pipeline import OHCAPredictorPipeline
+pipe = OHCAPredictorPipeline.load("models/v1/best_checkpoint.weights.h5")
+print(f"Config: dim={pipe.config.model_dim}, layers={pipe.config.num_encoder_layers}, "
+      f"ff={pipe.config.feedforward_dim}, tokens={pipe.config.tokens_per_modality}", flush=True)
+
+print("Step 2: Loading data...", flush=True)
+train_samples, val_samples, test_samples = joblib.load("pipeline_data.pkl")
+print(f"Val: {len(val_samples)}, Test: {len(test_samples)}", flush=True)
+
+print("Step 3: Creating dataset...", flush=True)
+from ohca_predictor.utils.io_utils import create_padded_dataset
+val_ds = create_padded_dataset(val_samples, batch_size=16, shuffle=False)
+print("Dataset created", flush=True)
+
+print("Step 4: Running inference...", flush=True)
+all_risks, all_labels = [], []
+for i, batch in enumerate(val_ds) {
+    if i % 5 == 0:
+        print(f"  batch {i}...", flush=True)
+    outputs = pipe.model(batch, training=False)
+    all_risks.append(outputs["ohca_risk"].numpy().ravel())
+    all_labels.append(batch["ohca_label"].numpy().ravel())
+}
+all_risks = np.concatenate(all_risks)
+all_labels = np.concatenate(all_labels)
+print(f"Done: {len(all_labels)} samples, pos_rate={all_labels.mean():.3f}", flush=True)
+
+from sklearn.metrics import roc_auc_score, average_precision_score
+
+auroc = roc_auc_score(all_labels, all_risks)
+auprc = average_precision_score(all_labels, all_risks)
+
+rng = np.random.default_rng(42)
+aurocs_b, auprcs_b = [], []
+for _ in range(200) {
+    idx = rng.choice(len(all_labels), size=len(all_labels), replace=True)
+    if len(np.unique(all_labels[idx])) < 2:
+        continue
+    aurocs_b.append(roc_auc_score(all_labels[idx], all_risks[idx]))
+    auprcs_b.append(average_precision_score(all_labels[idx], all_risks[idx]))
+}
+auroc_lo, auroc_hi = np.percentile(aurocs_b, [2.5, 97.5])
+auprc_lo, auprc_hi = np.percentile(auprcs_b, [2.5, 97.5])
+
+brier = np.mean((all_risks - all_labels) ** 2)
+
+thresholds = np.linspace(0, 1, 200)
+j_scores = []
+for t in thresholds {
+    preds = (all_risks >= t).astype(int)
+    tp = np.sum((preds == 1) & (all_labels == 1))
+    fp = np.sum((preds == 1) & (all_labels == 0))
+    fn = np.sum((preds == 0) & (all_labels == 1))
+    tn = np.sum((preds == 0) & (all_labels == 0))
+    sens = tp / (tp + fn) if (tp + fn) > 0 else 0
+    spec = tn / (tn + fp) if (tn + fp) > 0 else 0
+    j_scores.append(sens + spec - 1)
+}
+opt_idx = int(np.argmax(j_scores))
+opt_thr = thresholds[opt_idx]
+preds_opt = (all_risks >= opt_thr).astype(int)
+tp = np.sum((preds_opt == 1) & (all_labels == 1))
+fp = np.sum((preds_opt == 1) & (all_labels == 0))
+fn = np.sum((preds_opt == 0) & (all_labels == 1))
+tn = np.sum((preds_opt == 0) & (all_labels == 0))
+sens_opt = tp/(tp+fn) if (tp+fn)>0 else 0
+spec_opt = tn/(tn+fp) if (tn+fp)>0 else 0
+ppv_opt = tp/(tp+fp) if (tp+fp)>0 else 0
+f1_opt = 2*ppv_opt*sens_opt/(ppv_opt+sens_opt) if (ppv_opt+sens_opt)>0 else 0
+
+print(f"\n{'='*60}")
+print(f"  VALIDATION METRICS vs TRAINING LOG (epoch 62)")
+print(f"{'='*60}")
+print(f"{'Metric':<30} {'This run':<25} {'Training log':<25}")
+print(f"{'-'*80}")
+print(f"{'AUROC':<30} {auroc:.3f} [{auroc_lo:.3f}-{auroc_hi:.3f}]  0.915 [0.836-0.963]")
+print(f"{'AUPRC':<30} {auprc:.3f} [{auprc_lo:.3f}-{auprc_hi:.3f}]  0.841")
+print(f"{'Optimal threshold':<30} {opt_thr:.3f}                 0.60")
+print(f"{'Sens@opt':<30} {sens_opt:.3f}                 0.841")
+print(f"{'Spec@opt':<30} {spec_opt:.3f}                 0.894")
+print(f"{'PPV@opt':<30} {ppv_opt:.3f}                 0.698")
+print(f"{'F1@opt':<30} {f1_opt:.3f}                 0.763")
+print(f"{'Brier':<30} {brier:.4f}               —")
+print(f"{'Samples':<30} {len(all_labels)}                196")
+print(f"{'Pos rate':<30} {all_labels.mean():.3f}                —")
+print(f"{'='*60}")
+print("Inference completed.")

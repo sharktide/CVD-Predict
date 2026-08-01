@@ -1,0 +1,32 @@
+import joblib
+import numpy as np
+
+# Load the validation list
+_, val_samples, _ = joblib.load("pipeline_data.pkl")
+first_sample = val_samples[0]
+
+print("="*60)
+print(f"      INSPECTING {type(first_sample).__name__} FIELDS")
+print("="*60)
+
+# Loop through all attributes of the WindowSample instance
+for attr_name in dir(first_sample):
+    # Skip internal python methods
+    if attr_name.startswith('_'):
+        continue
+        
+    attr_val = getattr(first_sample, attr_name)
+    
+    # Check if the attribute is a callable function/method
+    if callable(attr_val):
+        continue
+        
+    # Print details based on data type
+    if isinstance(attr_val, np.ndarray):
+        print(f"Field: {attr_name:<20} | Type: NumPy Array | Shape: {str(attr_val.shape):<12} | Dtype: {attr_val.dtype}")
+    elif isinstance(attr_val, (int, float, bool, str)):
+        print(f"Field: {attr_name:<20} | Type: Primitive   | Value: {attr_val}")
+    else:
+        print(f"Field: {attr_name:<20} | Type: {type(attr_val).__name__}")
+        
+print("="*60)

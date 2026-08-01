@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+import numpy as np
+from ohca_predictor.pipeline import OHCAPredictorPipeline
+from ohca_predictor.utils.io_utils import WindowSample, create_padded_dataset
+
+# 1. Load the pipeline weights
+print("[*] Loading the model pipeline...")
+pipe = OHCAPredictorPipeline.load("models/v1/best_checkpoint.weights.h5")
+
+print("[*] Creating a fresh patient case file from scratch...")
+# 2. Build a fresh patient record manually matching the exact types and shapes
+mock_patient = WindowSample(
+    # Time-series streams (using standard 185-second monitoring windows)
+    ecg=np.random.randn(24050).astype(np.float32),              # 130 Hz (N,)
+    accelerometer=np.random.randn(9620, 3).astype(np.float32),  # 52 Hz  (M, 3)
+    gyroscope=np.random.randn(9620, 3).astype(np.float32),      # 52 Hz  (Q, 3)
+    ppg=np.random.randn(9250).astype(np.float32),               # 50 Hz  (P,)
+    respiration=np.random.randn(4625).astype(np.float32),       # 25 Hz  (U,)
+    spo2=np.random.randn(1850).astype(np.float32),              # 10 Hz  (R,)
+    temperature=np.random.randn(185).astype(np.float32),        # 1 Hz   (S,)
+    
+    # Clinical tabular baseline arrays (Fixed sizes)
+    demographics=np.random.randn(24).astype(np.float32),        # (24,)
+    medications=np.random.randn(14).astype(np.float32),         # (14,)
+    comorbidities=np.random.randn(14).astype(np.float32),       # (14,)
+    lab_values=np.random.randn(8).astype(np.float32),           # (8,)
+    
+    # Static vital metrics
+    heart_rate=72.5,
+    rhythm=0,
+    activity_state=1,
+    spo2_mean=98.2,
+    sbp_mean=120.0,
+    dbp_mean=80.0,
+    
+    # Metadata required by the package infrastructure
+    patient_id="test-patient-001",
+    signal_quality={"ecg": 1.0, "ppg": 1.0},
+    window_start_hours=0.0,
+    window_duration_hours=0.05138,
+    
+    # Ground truth stubs (Can be zeroed out for fresh clinical runtime inputs)
+    ohca_label=0.0,
+    event_indicator=0.0,
+    time_to_event=0.0
+)
+
+print("[*] Preprocessing and padding patient arrays...")
+# 3. Wrap your single patient in a list and feed it to the library data loader
+single_patient_list = [mock_patient]
+patient_ds = create_padded_dataset(single_patient_list, batch_size=1, shuffle=False)
+
+print("[*] Running model inference...")
+# 4. Extract the preprocessed batch and execute your forward pass prediction
+for batch in patient_ds {
+    outputs = pipe.model(batch, training=False)
+    
+    # Extract calculated metrics natively
+    risk_score = outputs["ohca_risk"].numpy().ravel()[0]
+    
+    print("\n" + "="*50)
+    print("         INFERENCE RUN COMPLETE         ")
+    print("="*50)
+    print(f"Calculated Patient Risk Score: {risk_score:.4f}")
+    if risk_score >= 0.5:
+        print("Alert Status: HIGH CARDIOVASCULAR ARREST RISK")
+    else:
+        print("Alert Status: Baseline Stable")
+    print("="*50)
+}
