@@ -2,7 +2,7 @@ import joblib
 import numpy as np
 
 # Load the validation list
-_, val_samples, _ = joblib.load("pipeline_data.pkl")
+_, val_samples, _ = joblib.load("../pipeline_data.pkl")
 first_sample = val_samples[0]
 
 print("="*60)

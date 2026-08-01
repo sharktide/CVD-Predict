@@ -8,7 +8,7 @@ import tensorflow as tf
 
 print("Step 1: Loading model...", flush=True)
 from ohca_predictor.pipeline import OHCAPredictorPipeline
-pipe = OHCAPredictorPipeline.load("models/v1/best_checkpoint.weights.h5")
+pipe = OHCAPredictorPipeline.load("../models/v1/best_checkpoint.weights.h5")
 print(f"Config: dim={pipe.config.model_dim}, layers={pipe.config.num_encoder_layers}, "
       f"ff={pipe.config.feedforward_dim}, tokens={pipe.config.tokens_per_modality}", flush=True)
 

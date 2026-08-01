@@ -1,0 +1,90 @@
+#!/usr/bin/env repycl
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
+
+from ohca_predictor.pipeline import OHCAPredictorPipeline
+from ohca_predictor.utils.io_utils import WindowSample, create_padded_dataset
+
+# 1. Load the model
+pipe = OHCAPredictorPipeline.load("../models/v1/best_checkpoint.weights.h5")
+
+def get_prediction(sample_obj):
+    ds = create_padded_dataset([sample_obj], batch_size=1, shuffle=False)
+    for batch in ds:
+        outputs = pipe.model(batch, training=False)
+        return float(outputs["ohca_risk"].numpy().item())
+
+# 2. Setup baseline arrays
+demographics = np.zeros(24, dtype=np.float32)
+medications = np.zeros(14, dtype=np.float32)
+comorbidities = np.zeros(14, dtype=np.float32)
+lab_values = np.zeros(8, dtype=np.float32)
+accel_gyro_zeros = np.zeros((9620, 3), dtype=np.float32)
+
+# 3. Case A: Stable / Quiet Waveform Signal
+healthy_patient = WindowSample(
+    ecg=np.sin(np.linspace(0, 50, 24050)).astype(np.float32) * 0.01,
+    accelerometer=accel_gyro_zeros,
+    gyroscope=accel_gyro_zeros,
+    ppg=np.sin(np.linspace(0, 50, 9250)).astype(np.float32) * 0.01,
+    respiration=np.zeros(4625, dtype=np.float32),
+    spo2=np.zeros(1850, dtype=np.float32),
+    temperature=np.zeros(185, dtype=np.float32),
+    demographics=demographics,
+    medications=medications,
+    comorbidities=comorbidities,
+    lab_values=lab_values,
+    heart_rate=60.0,
+    rhythm=0,
+    activity_state=0,
+    spo2_mean=98.0,
+    sbp_mean=120.0,
+    dbp_mean=80.0,
+    patient_id="verify-healthy",
+    signal_quality={"ecg": 1.0},
+    window_start_hours=0.0,
+    window_duration_hours=0.05138,
+    ohca_label=0.0, 
+    event_indicator=0.0, 
+    time_to_event=0.0
+)
+
+# 4. Case B: High Volatility Waveform Signal (Extreme V-Fib / Massive Signal Spike)
+critical_patient = WindowSample(
+    ecg=np.random.randn(24050).astype(np.float32) * 5.0,  # Spiked ECG
+    accelerometer=accel_gyro_zeros,
+    gyroscope=accel_gyro_zeros,
+    ppg=np.random.randn(9250).astype(np.float32) * 5.0,    # Spiked PPG
+    respiration=np.zeros(4625, dtype=np.float32),
+    spo2=np.zeros(1850, dtype=np.float32),
+    temperature=np.zeros(185, dtype=np.float32),
+    demographics=demographics,
+    medications=medications,
+    comorbidities=comorbidities,
+    lab_values=lab_values,
+    heart_rate=155.0,
+    rhythm=0,
+    activity_state=0,
+    spo2_mean=75.0,
+    sbp_mean=80.0,
+    dbp_mean=45.0,
+    patient_id="verify-critical",
+    signal_quality={"ecg": 1.0},
+    window_start_hours=0.0,
+    window_duration_hours=0.05138,
+    ohca_label=0.0, 
+    event_indicator=0.0, 
+    time_to_event=0.0
+)
+
+risk_healthy = get_prediction(healthy_patient)
+risk_critical = get_prediction(critical_patient)
+
+print("\n" + "="*60)
+print("          INDEPENDENT WAVEFORM SENSITIVITY VERIFICATION        ")
+print("="*60)
+print(f"Low Volatility Waveform Risk  : {risk_healthy:.4f}")
+print(f"High Volatility Waveform Risk : {risk_critical:.4f}")
+print(f"Absolute Signal Sensitivity    : {abs(risk_critical - risk_healthy):.4f}")
+print("="*60)
