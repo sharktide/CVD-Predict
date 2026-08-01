@@ -490,15 +490,15 @@ class OHCAPredictionModel(keras.Model):
         )
         self.spo2_tokenizer = AuxSignalTokenizer(
             model_dim=D, target_tokens=T_tokens,
-            dropout_rate=config.dropout_rate, name="spo2_tokenizer",
+            dropout_rate=config.dropout_rate,
         )
         self.temp_tokenizer = AuxSignalTokenizer(
             model_dim=D, target_tokens=T_tokens,
-            dropout_rate=config.dropout_rate, name="temp_tokenizer",
+            dropout_rate=config.dropout_rate,
         )
         self.resp_tokenizer = AuxSignalTokenizer(
             model_dim=D, target_tokens=T_tokens,
-            dropout_rate=config.dropout_rate, name="resp_tokenizer",
+            dropout_rate=config.dropout_rate,
         )
 
         # ---- Static Patient Embedding ----
@@ -509,7 +509,6 @@ class OHCAPredictionModel(keras.Model):
             num_labs=num_labs,
             static_embedding_dim=D,
             dropout_rate=config.dropout_rate,
-            name="static_embedding",
         )
 
         # ---- Cross-Modal Attention ----
@@ -519,14 +518,14 @@ class OHCAPredictionModel(keras.Model):
             num_heads=config.num_attention_heads,
             attention_dropout=config.attention_dropout_rate,
             value_dropout=config.dropout_rate,
-            name="ecg_motion_cross_attn",
+            name="ecg_motion_attention",
         )
         self.hierarchical_cross_attention = HierarchicalCrossAttention(
             model_dim=D,
             num_heads=config.num_attention_heads,
             attention_dropout=config.attention_dropout_rate,
             value_dropout=config.dropout_rate,
-            name="hierarchical_cross_attn",
+            name="hierarchical_cross_attention",
         )
         # Multi-modal ECG attends to PPG
         self.ecg_ppg_attention = AsymmetricCrossAttention(
@@ -534,7 +533,7 @@ class OHCAPredictionModel(keras.Model):
             num_heads=config.num_attention_heads,
             attention_dropout=config.attention_dropout_rate,
             value_dropout=config.dropout_rate,
-            name="ecg_ppg_cross_attn",
+            name="ecg_ppg_attention",
         )
 
         # ---- Sequence Alignment (adaptive pooling to common length T) ----
@@ -582,7 +581,7 @@ class OHCAPredictionModel(keras.Model):
             model_dim=D,
             num_survival_bins=config.num_survival_bins,
             use_cls_token=True,
-            name="survival_head",
+            name="survival_analysis_head",
         )
         self.uncertainty_head = UncertaintyHead(
             model_dim=D,

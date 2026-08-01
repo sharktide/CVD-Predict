@@ -528,10 +528,12 @@ class AuxSignalTokenizer(keras.layers.Layer):
         # --- Short-signal branch: project via MLP to intermediate_len ---
         self.short_proj_dense1 = keras.layers.Dense(
             self.model_dim, activation="gelu", kernel_initializer="he_normal",
+            name="short_proj_dense1",
         )
         self.short_proj_dense2 = keras.layers.Dense(
             self.intermediate_len * self.model_dim,
             kernel_initializer="he_normal",
+            name="short_proj_dense2",
         )
         self.short_proj_dropout = keras.layers.Dropout(self.dropout_rate)
 
@@ -543,10 +545,11 @@ class AuxSignalTokenizer(keras.layers.Layer):
             padding="causal",
             use_bias=False,
             kernel_initializer="he_normal",
+            name="conv1",
         )
-        self.bn1 = keras.layers.BatchNormalization()
-        self.act1 = keras.layers.Activation("gelu")
-        self.drop1 = keras.layers.Dropout(self.dropout_rate)
+        self.bn1 = keras.layers.BatchNormalization(name="bn1")
+        self.act1 = keras.layers.Activation("gelu", name="act1")
+        self.drop1 = keras.layers.Dropout(self.dropout_rate, name="drop1")
 
         # A small residual refinement after the stem
         self.refine_conv1 = keras.layers.Conv1D(
@@ -557,9 +560,10 @@ class AuxSignalTokenizer(keras.layers.Layer):
             dilation_rate=1,
             use_bias=False,
             kernel_initializer="he_normal",
+            name="refine_conv1",
         )
-        self.refine_bn1 = keras.layers.BatchNormalization()
-        self.refine_act1 = keras.layers.Activation("gelu")
+        self.refine_bn1 = keras.layers.BatchNormalization(name="refine_bn1")
+        self.refine_act1 = keras.layers.Activation("gelu", name="refine_act1")
 
         self.refine_conv2 = keras.layers.Conv1D(
             filters=self.model_dim,
@@ -569,12 +573,13 @@ class AuxSignalTokenizer(keras.layers.Layer):
             dilation_rate=2,
             use_bias=False,
             kernel_initializer="he_normal",
+            name="refine_conv2",
         )
-        self.refine_bn2 = keras.layers.BatchNormalization()
+        self.refine_bn2 = keras.layers.BatchNormalization(name="refine_bn2")
 
-        self.refine_add = keras.layers.Add()
-        self.refine_act2 = keras.layers.Activation("gelu")
-        self.refine_drop = keras.layers.Dropout(self.dropout_rate)
+        self.refine_add = keras.layers.Add(name="refine_add")
+        self.refine_act2 = keras.layers.Activation("gelu", name="refine_act2")
+        self.refine_drop = keras.layers.Dropout(self.dropout_rate, name="refine_drop")
 
         # Adaptive pooling to fixed token count
         self.adaptive_pool = _adaptive_avg_pool1d(self.target_tokens)
