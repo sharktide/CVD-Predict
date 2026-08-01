@@ -1,0 +1,6 @@
+[console_scripts]
+ohca-benchmark = ohca_predictor.scripts.benchmark:main
+ohca-evaluate = ohca_predictor.scripts.evaluate:main
+ohca-generate = ohca_predictor.scripts.generate_data:main
+ohca-profile = ohca_predictor.scripts.profile:main
+ohca-train = ohca_predictor.scripts.train:main
