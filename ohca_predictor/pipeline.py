@@ -108,21 +108,33 @@ class OHCAPredictorPipeline:
         config: Optional[ModelConfig] = None,
         threshold: float = 0.20,
     ) -> "OHCAPredictorPipeline":
-        """Load a trained pipeline from a weights file.
+        """Load a trained pipeline from a weights file or Hugging Face model.
 
         The weights file should have been saved by the training pipeline.
         Config is loaded from the sibling ``config.json`` if present,
         otherwise uses defaults.
 
+        If the model is loaded from Hugging Face, the weights and config are downloaded automatically regardless of the local working directory and passed config.
+        To load a model from huggingface, ensure that it contians the "best_checkpoint.weights.h5" and "config.json" files at root, and use the model ID with the "hf://" prefix.
+
         Args:
-            weights_path: Path to ``.weights.h5`` file.
+            weights_path: Path to ``.weights.h5`` file or Hugging Face model ID. with hf:// prefix.
             config: Optional ModelConfig override.
             threshold: Classification threshold (default 0.20).
 
         Returns:
             Initialized OHCAPredictorPipeline.
         """
-        if config is None:
+        if weights_path.startswith("hf://"):
+            from huggingface_hub import hf_hub_download
+
+            model_id = weights_path[len("hf://") :]
+            weights_path = hf_hub_download(model_id, "best_checkpoint.weights.h5")
+            cfg_path = hf_hub_download(model_id, "config.json")
+            with open(cfg_path, "r") as f:
+                cfg_dict = json.load(f)
+            config = ModelConfig(**cfg_dict.get("model", cfg_dict))
+        elif config is None:
             cfg_path = os.path.join(os.path.dirname(weights_path), "config.json")
             if os.path.exists(cfg_path):
                 with open(cfg_path, "r") as f:
