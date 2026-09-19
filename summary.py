@@ -106,47 +106,47 @@ def make_config():
         simulation=SimulationConfig(
             min_window_duration_hours=0.05,
             max_window_duration_hours=0.12,
-            population_size=1000,
-            prevalence_ohca=0.10,
+            population_size=250,
+            prevalence_ohca=0.01,
         ),
         training=TrainingConfig(
-            batch_size=8,
-            epochs=300,
-            learning_rate=5e-4,
-            warmup_steps=100,
+            batch_size=4,
+            epochs=200,
+            learning_rate=2e-4,
+            warmup_steps=50,
             min_learning_rate=1e-6,
             mixed_precision=True,
-            gradient_clip_norm=0.5,
+            gradient_clip_norm=1.0,
             gradient_accumulation_steps=1,
-            focal_loss_gamma=1.0,
-            false_negative_weight=4.0,
+            focal_loss_gamma=2.0,
+            false_negative_weight=10.0,
             false_positive_weight=1.0,
             survival_loss_weight=0.3,
             auxiliary_loss_weight=0.1,
             contrastive_loss_weight=0.0,
             reconstruction_loss_weight=0.0,
-            early_stopping_patience=30,
+            early_stopping_patience=25,
             checkpoint_save_best_only=True,
             weight_decay=0.01,
         ),
         model=ModelConfig(
-            model_dim=128,
-            num_attention_heads=4,
+            model_dim=192,
+            num_attention_heads=8,
             num_encoder_layers=4,
-            feedforward_dim=256,
-            dropout_rate=0.3,
-            attention_dropout_rate=0.15,
+            feedforward_dim=512,
+            dropout_rate=0.2,
+            attention_dropout_rate=0.1,
             static_embedding_dim=64,
             tokens_per_modality=64,
             max_positional_encoding=4096,
             num_survival_bins=12,
-            uncertainty_samples=5,
+            uncertainty_samples=30,
         ),
         evaluation=EvaluationConfig(
             bootstrap_iterations=200,
             confidence_level=0.95,
             clinical_thresholds=[0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50],
-            primary_threshold=0.20,
+            primary_threshold=0.15,
             calibration_bins=10,
         ),
     )
@@ -195,10 +195,10 @@ class OHCA_TrainableModel(tf.keras.Model):
                 # Weight peaks at 1-2 hours before OHCA, drops for very close (<30min) and far (>4h)
                 time_weight = tf.where(
                     label_f > 0.5,
-                    tf.exp(-0.3 * (tte_hours - 1.5) ** 2) * 0.8 + 0.6,  # Gentle peak at 1.5h
+                    tf.exp(-0.5 * (tte_hours - 1.5) ** 2) * 1.5 + 0.5,  # Gaussian peak at 1.5h
                     1.0  # normal weight for negatives
                 )
-                time_weight = tf.clip_by_value(time_weight, 0.6, 1.8)
+                time_weight = tf.clip_by_value(time_weight, 0.3, 3.0)
                 weighted_loss = tf.reduce_mean(base_loss * time_weight)
             else:
                 weighted_loss = base_loss
@@ -415,7 +415,7 @@ def phase1_generate(config):
     n_patients = config.simulation.population_size
 
     all_train, all_val, all_test = [], [], []
-    batch_size = 100
+    batch_size = 25
     t0 = time.time()
 
     for i in range(0, n_patients, batch_size):
@@ -550,308 +550,11 @@ def phase2_train(config, train_samples, val_samples):
     # ── Train ──────────────────────────────────────────────────────
     t_train_start = time.time()
     log("  Starting training...")
+    trainable_model.load_weights(os.path.join(MODEL_DIR, "best_checkpoint.weights.h5"), skip_mismatch=True)
+    trainable_model.summary()
 
-    trainable_model.fit(
-        train_ds,
-        epochs=config.training.epochs,
-        callbacks=[clinical_cb],
-        verbose=0,
-    )
+    return trainable_model
 
-    total_train_time = time.time() - t_train_start
-    log(f"  Total training time: {total_train_time/3600:.2f}h ({total_train_time:.0f}s)")
-
-    # Restore best weights
-    best_ckpt = os.path.join(MODEL_DIR, "best_checkpoint.weights.h5")
-    if os.path.exists(best_ckpt):
-        ohca_model.load_weights(best_ckpt)
-        log(f"  Restored best weights (AUROC={clinical_cb.best_auroc:.4f})")
-
-    # Save history
-    hist_path = os.path.join(RESULTS_DIR, "training_history.json")
-    with open(hist_path, "w") as f:
-        json.dump(clinical_cb.history, f, indent=2, default=str)
-    log(f"  Training history saved: {hist_path}")
-
-    return ohca_model, clinical_cb.history, clinical_cb.best_auroc
-
-
-# ═══════════════════════════════════════════════════════════════════
-# PHASE 3 — COMPREHENSIVE EVALUATION
-# ═══════════════════════════════════════════════════════════════════
-
-def phase3_evaluate(config, model, test_samples, history):
-    log("=" * 70)
-    log("PHASE 3: COMPREHENSIVE EVALUATION ON HELD-OUT TEST SET")
-    log("=" * 70)
-
-    test_ds = create_padded_dataset(
-        test_samples, batch_size=config.training.batch_size, shuffle=False,
-    )
-
-    all_risks = []
-    all_raw_risks = []
-    all_labels = []
-    all_survival = []
-    all_uncertainty = []
-    all_tte = []
-    all_evt = []
-
-    for batch in test_ds:
-        outputs = model(batch, training=False)
-        all_risks.append(outputs["ohca_risk"].numpy().ravel())
-        all_raw_risks.append(outputs["raw_risk"].numpy().ravel())
-        all_labels.append(batch["ohca_label"].numpy().ravel())
-        all_survival.append(outputs["survival_curve"].numpy())
-        all_uncertainty.append(outputs["uncertainty"].numpy())
-        all_tte.append(batch["time_to_event"].numpy().ravel())
-        all_evt.append(batch["event_indicator"].numpy().ravel())
-
-    all_risks = np.asarray(np.concatenate(all_risks), dtype=np.float32).ravel()
-    all_raw_risks = np.asarray(np.concatenate(all_raw_risks), dtype=np.float32).ravel()
-    all_labels = np.asarray(np.concatenate(all_labels), dtype=np.float32).ravel()
-    all_survival = np.asarray(np.concatenate(all_survival), dtype=np.float32)
-    all_uncertainty = np.asarray(np.concatenate(all_uncertainty), dtype=np.float32)
-    all_tte = np.asarray(np.concatenate(all_tte), dtype=np.float32).ravel()
-    all_evt = np.asarray(np.concatenate(all_evt), dtype=np.float32).ravel()
-
-    n_total = len(all_labels)
-    n_pos = int(all_labels.sum())
-    log(f"  Test set: {n_total} samples, {n_pos} positive "
-        f"({n_pos/max(1,n_total)*100:.1f}%)")
-
-    evaluator = OHCAEvaluator(config.evaluation)
-
-    # ── 3a. Core metrics at primary threshold ──────────────────────
-    thr = config.evaluation.primary_threshold
-    log(f"\n  ── Core Metrics (threshold={thr}) ──")
-    metrics = evaluator.compute_all_metrics(all_labels, all_risks, threshold=thr)
-    evaluator.print_report(metrics)
-
-    # ── 3b. Multi-threshold analysis ───────────────────────────────
-    log(f"\n  ── Multi-Threshold Analysis ──")
-    threshold_results = []
-    for t in config.evaluation.clinical_thresholds:
-        s, _, _ = evaluator.compute_sensitivity_at_threshold(all_labels, all_risks, t)
-        sp, _, _ = evaluator.compute_specificity_at_threshold(all_labels, all_risks, t)
-        p, _, _ = evaluator.compute_ppv(all_labels, all_risks, t)
-        n_v, _, _ = evaluator.compute_npv(all_labels, all_risks, t)
-        f, _, _ = evaluator.compute_f1_score(all_labels, all_risks, t)
-        youden = s + sp - 1.0
-        threshold_results.append({
-            "threshold": t, "sensitivity": s, "specificity": sp,
-            "ppv": p, "npv": n_v, "f1": f, "youden_j": youden,
-        })
-        log(f"    thr={t:.2f}: Sens={s:.3f} Spec={sp:.3f} "
-            f"PPV={p:.3f} NPV={n_v:.3f} F1={f:.3f} J={youden:.3f}")
-
-    best_j_idx = max(range(len(threshold_results)),
-                     key=lambda i: threshold_results[i]["youden_j"])
-    best_thr = threshold_results[best_j_idx]["threshold"]
-    best_j = threshold_results[best_j_idx]["youden_j"]
-    log(f"\n  Optimal threshold (Youden's J): {best_thr:.2f} (J={best_j:.3f})")
-
-    log(f"\n  ── Metrics at Optimal Threshold ({best_thr}) ──")
-    opt_metrics = evaluator.compute_all_metrics(all_labels, all_risks, threshold=best_thr)
-    evaluator.print_report(opt_metrics)
-
-    # ── 3c. Calibration ────────────────────────────────────────────
-    log(f"\n  ── Calibration Analysis ──")
-    cal_analyzer = CalibrationAnalyzer(config.evaluation)
-    cal_metrics = {}
-    try:
-        bin_edges, obs_freq, exp_freq = cal_analyzer.reliability_diagram(
-            all_labels, all_risks,
-        )
-        cal_metrics = cal_analyzer.compute_calibration_metrics(all_labels, all_risks)
-        log(f"    ECE: {cal_metrics.get('ece', 0):.4f}")
-        log(f"    MCE: {cal_metrics.get('mce', 0):.4f}")
-        log(f"    Brier: {cal_metrics.get('brier', 0):.4f}")
-        for i, (o, e) in enumerate(zip(obs_freq, exp_freq)):
-            if o > 0 or e > 0:
-                log(f"      bin [{bin_edges[i]:.2f}–{bin_edges[i+1]:.2f}]: "
-                    f"observed={o:.3f} expected={e:.3f}")
-    except Exception as exc:
-        log(f"    Calibration error: {exc}")
-
-    # Subgroup-fair calibration
-    log(f"\n  ── Subgroup Calibration ──")
-    try:
-        # Split by age group (from demographics)
-        all_demos = None
-        for i, batch in enumerate(test_ds):
-            demo = batch.get("demographics")
-            if demo is not None:
-                demo_np = demo.numpy()
-                if i == 0:
-                    all_demos = demo_np
-                else:
-                    all_demos = np.concatenate([all_demos, demo_np], axis=0)
-
-        if all_demos is not None and len(all_demos) == len(all_risks):
-            age = all_demos[:, 0]  # first feature is age
-            for age_lo, age_hi, label in [(18, 45, "young"), (45, 65, "middle"), (65, 100, "elderly")]:
-                mask = (age >= age_lo) & (age < age_hi)
-                if np.sum(mask) > 5:
-                    sub_cal = cal_analyzer.compute_calibration_metrics(all_labels[mask], all_risks[mask])
-                    log(f"    {label} (n={np.sum(mask)}): ECE={sub_cal.get('ece',0):.4f} "
-                        f"Brier={sub_cal.get('brier',0):.4f}")
-    except Exception as exc:
-        log(f"    Subgroup calibration error: {exc}")
-
-    # Decision Curve Analysis
-    log(f"\n  ── Decision Curve Analysis ──")
-    try:
-        from ohca_predictor.evaluation.metrics import decision_curve_analysis
-        dca_results = decision_curve_analysis(all_labels, all_risks, thresholds=np.arange(0.01, 0.99, 0.01))
-        net_benefits = dca_results['net_benefit']
-        thresholds_dca = dca_results['thresholds']
-
-        # Find optimal threshold by net benefit
-        best_nb_idx = np.argmax(net_benefits)
-        best_nb_threshold = thresholds_dca[best_nb_idx]
-        best_nb = net_benefits[best_nb_idx]
-
-        log(f"    Max net benefit: {best_nb:.4f} at threshold {best_nb_threshold:.3f}")
-        log(f"    Net benefit at 0.10: {net_benefits[np.argmin(np.abs(thresholds_dca - 0.10))]:.4f}")
-        log(f"    Net benefit at 0.20: {net_benefits[np.argmin(np.abs(thresholds_dca - 0.20))]:.4f}")
-        log(f"    Net benefit at 0.30: {net_benefits[np.argmin(np.abs(thresholds_dca - 0.30))]:.4f}")
-
-        # Clinical utility: at what threshold does model beat treat-all?
-        treat_all_nb = dca_results.get('treat_all', np.zeros_like(net_benefits))
-        utility_mask = net_benefits > treat_all_nb
-        if np.any(utility_mask):
-            util_range = thresholds_dca[utility_mask]
-            log(f"    Model beats treat-all for thresholds: [{util_range[0]:.2f}, {util_range[-1]:.2f}]")
-    except Exception as exc:
-        log(f"    DCA error: {exc}")
-
-    # ── 3d. Uncertainty analysis ───────────────────────────────────
-    log(f"\n  ── Uncertainty Analysis ──")
-    mean_pred = mean_sigma = None
-    try:
-        all_uncertainty = np.asarray(all_uncertainty, dtype=np.float32)
-        mean_pred = all_uncertainty[:, 0]
-        mean_sigma = all_uncertainty[:, 1]
-        log(f"    Mean predicted risk: {np.mean(mean_pred):.4f}")
-        log(f"    Mean uncertainty (σ): {np.mean(mean_sigma):.4f}")
-        log(f"    Median σ: {np.median(mean_sigma):.4f}")
-
-        med_sigma = np.median(mean_sigma)
-        high_unc = mean_sigma > med_sigma
-        low_unc = ~high_unc
-        if np.sum(high_unc) > 0 and np.sum(low_unc) > 0:
-            log(f"    High-uncertainty (n={np.sum(high_unc)}): "
-                f"mean risk={np.mean(all_risks[high_unc]):.4f}, "
-                f"true rate={np.mean(all_labels[high_unc]):.4f}")
-            log(f"    Low-uncertainty  (n={np.sum(low_unc)}): "
-                f"mean risk={np.mean(all_risks[low_unc]):.4f}, "
-                f"true rate={np.mean(all_labels[low_unc]):.4f}")
-    except Exception as exc:
-        log(f"    Uncertainty analysis error: {exc}")
-        log(f"    uncertainty shape={np.shape(all_uncertainty)} dtype={getattr(all_uncertainty, 'dtype', 'unknown')}")
-
-    # ── 3e. Survival analysis ──────────────────────────────────────
-    log(f"\n  ── Survival Analysis ──")
-    log(f"    Survival curve shape: {all_survival.shape}")
-    try:
-        all_survival = np.asarray(all_survival, dtype=np.float32)
-        log(f"    Mean survival at t=0: {float(np.mean(all_survival[:, 0])):.4f}")
-        log(f"    Mean survival at t=end: {float(np.mean(all_survival[:, -1])):.4f}")
-    except Exception as exc:
-        log(f"    Survival analysis error: {exc}")
-
-    # ── 3f. Risk stratification ────────────────────────────────────
-    log(f"\n  ── Risk Stratification ──")
-    for risk_lo, risk_hi in [(0, 0.05), (0.05, 0.15), (0.15, 0.30),
-                              (0.30, 0.50), (0.50, 1.01)]:
-        mask = (all_risks >= risk_lo) & (all_risks < risk_hi)
-        n = int(mask.sum())
-        if n > 0:
-            rate = float(all_labels[mask].mean())
-            log(f"    [{risk_lo:.2f}, {risk_hi:.2f}): n={n:4d} "
-                f"prevalence={rate:.3f}")
-
-    # ── 3g. Prediction distribution ────────────────────────────────
-    log(f"\n  ── Prediction Distribution ──")
-    try:
-        _r = np.asarray(all_risks, dtype=np.float64)
-        log(f"    Risk range: [{float(_r.min()):.4f}, {float(_r.max()):.4f}]")
-        log(f"    Risk mean±std: {float(_r.mean()):.4f} ± {float(_r.std()):.4f}")
-        log(f"    Percentiles: p10={float(np.percentile(_r,10)):.4f} "
-            f"p25={float(np.percentile(_r,25)):.4f} "
-            f"p50={float(np.percentile(_r,50)):.4f} "
-            f"p75={float(np.percentile(_r,75)):.4f} "
-            f"p90={float(np.percentile(_r,90)):.4f}")
-    except Exception as exc:
-        log(f"    Prediction distribution error: {exc}")
-
-    # ── 3h. Bootstrap CIs ──────────────────────────────────────────
-    log(f"\n  ── Bootstrap 95% CIs ──")
-    try:
-        _bl = np.asarray(all_labels, dtype=np.float64).ravel()
-        _br = np.asarray(all_risks, dtype=np.float64).ravel()
-        auroc_ci, auroc_lo, auroc_hi = evaluator.compute_auroc(_bl, _br)
-        log(f"    AUROC: {float(auroc_ci):.4f} [{float(auroc_lo):.4f}, {float(auroc_hi):.4f}]")
-        auprc_ci, auprc_lo, auprc_hi = evaluator.compute_auprc(_bl, _br)
-        log(f"    AUPRC: {float(auprc_ci):.4f} [{float(auprc_lo):.4f}, {float(auprc_hi):.4f}]")
-        sens_ci, sens_lo, sens_hi = evaluator.compute_sensitivity_at_threshold(
-            _bl, _br, thr)
-        log(f"    Sens@{thr}: {float(sens_ci):.4f} [{float(sens_lo):.4f}, {float(sens_hi):.4f}]")
-        spec_ci, spec_lo, spec_hi = evaluator.compute_specificity_at_threshold(
-            _bl, _br, thr)
-        log(f"    Spec@{thr}: {float(spec_ci):.4f} [{float(spec_lo):.4f}, {float(spec_hi):.4f}]")
-    except Exception as e:
-        log(f"    Bootstrap CI error: {e}")
-
-    # ── Save results ───────────────────────────────────────────────
-    results = {
-        "core_metrics": {
-            k: (float(v) if isinstance(v, (float, np.floating))
-                else [float(x) for x in v] if isinstance(v, tuple) else v)
-            for k, v in metrics.items()
-        },
-        "optimal_threshold": {
-            "threshold": float(best_thr),
-            "youden_j": float(best_j),
-            "metrics": {
-                k: (float(v) if isinstance(v, (float, np.floating))
-                    else [float(x) for x in v] if isinstance(v, tuple) else v)
-                for k, v in opt_metrics.items()
-            },
-        },
-        "multi_threshold": threshold_results,
-        "calibration": cal_metrics,
-        "uncertainty": {
-            "mean_predicted_risk": float(np.mean(mean_pred)) if mean_pred is not None else 0.0,
-            "mean_sigma": float(np.mean(mean_sigma)) if mean_sigma is not None else 0.0,
-        },
-        "survival": {
-            "mean_survival_t0": float(np.mean(all_survival[:, 0])) if all_survival.size > 0 else 0.0,
-            "mean_survival_end": float(np.mean(all_survival[:, -1])) if all_survival.size > 0 else 0.0,
-        },
-        "prediction_distribution": {
-            "min": float(np.asarray(all_risks, dtype=np.float64).min()),
-            "max": float(np.asarray(all_risks, dtype=np.float64).max()),
-            "mean": float(np.asarray(all_risks, dtype=np.float64).mean()),
-            "std": float(np.asarray(all_risks, dtype=np.float64).std()),
-        },
-        "test_samples": n_total,
-        "positive_rate": float(n_pos / max(1, n_total)),
-        "history": history,
-    }
-
-    results_path = os.path.join(RESULTS_DIR, "evaluation_results.json")
-    with open(results_path, "w") as f:
-        json.dump(results, f, indent=2, default=str)
-    log(f"\n  Results saved: {results_path}")
-
-    return metrics, results
-
-
-# ═══════════════════════════════════════════════════════════════════
-# MAIN
-# ═══════════════════════════════════════════════════════════════════
 
 def main():
     t0 = time.time()
@@ -872,49 +575,7 @@ def main():
             log("[ERROR] No training data. Aborting.")
             return
 
-        model, history, best_auroc = phase2_train(config, train_samples, val_samples)
-
-        metrics, results = phase3_evaluate(config, model, test_samples, history)
-
-        final_path = os.path.join(MODEL_DIR, "ohca_model_final.weights.h5")
-        model.save_weights(final_path)
-        log(f"\n  Final model saved: {final_path}")
-
-        # Save model config for OHCAPredictorPipeline.load()
-        model_cfg = {
-            "model": {
-                "model_dim": config.model.model_dim,
-                "num_attention_heads": config.model.num_attention_heads,
-                "num_encoder_layers": config.model.num_encoder_layers,
-                "feedforward_dim": config.model.feedforward_dim,
-                "dropout_rate": config.model.dropout_rate,
-                "attention_dropout_rate": config.model.attention_dropout_rate,
-                "static_embedding_dim": config.model.static_embedding_dim,
-                "tokens_per_modality": config.model.tokens_per_modality,
-                "max_positional_encoding": config.model.max_positional_encoding,
-                "num_survival_bins": config.model.num_survival_bins,
-                "uncertainty_samples": config.model.uncertainty_samples,
-            }
-        }
-        cfg_path = os.path.join(MODEL_DIR, "config.json")
-        with open(cfg_path, "w") as f:
-            json.dump(model_cfg, f, indent=2)
-        log(f"  Config saved: {cfg_path}")
-        log(f"\n  To use the model:")
-        log(f"    from ohca_predictor.pipeline import OHCAPredictorPipeline")
-        log(f"    pipe = OHCAPredictorPipeline.load('{final_path}')")
-        log(f"    result = pipe.predict(ecg=ecg, accelerometer=accel, ppg=ppg, ...)")
-        log(f"    print(result.risk, result.uncertainty, result.high_risk)")
-
-        elapsed = time.time() - t0
-        log("\n" + "=" * 70)
-        log("PIPELINE COMPLETE")
-        log(f"  Total time: {elapsed/3600:.2f}h ({elapsed:.0f}s)")
-        log(f"  Best validation AUROC: {best_auroc:.4f}")
-        log(f"  Results: {RESULTS_DIR}/evaluation_results.json")
-        log(f"  TensorBoard: {TENSORBOARD_DIR}")
-        log(f"  Model: {final_path}")
-        log("=" * 70)
+        model = phase2_train(config, train_samples, val_samples)
 
     except Exception as e:
         log(f"\n[FATAL] Pipeline error: {e}")

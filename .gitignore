@@ -1,5 +1,6 @@
 .old
 .old2
 db
-md=odels
-*.egg-info/**
+models
+ohca_predictor.egg-info
+**/**/*.pyc

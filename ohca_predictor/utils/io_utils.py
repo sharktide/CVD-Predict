@@ -792,9 +792,32 @@ def create_padded_dataset(
         for key in ["rhythm", "activity_state"]:
             if key in batch_dict:
                 padded[key] = tf.cast(tf.stack(batch_dict[key]), tf.int32)
-        # survival_labels: zeros (placeholder)
         batch_size_actual = tf.shape(padded.get("ohca_label", tf.zeros(1)))[0]
-        padded["survival_labels"] = tf.zeros((batch_size_actual, 13), dtype=tf.float32)
+        n_survival_bins = 12
+        tte = padded.get("time_to_event", tf.zeros((batch_size_actual,)))
+        evt = padded.get("event_indicator", tf.zeros((batch_size_actual,)))
+        max_dur = 48.0
+        bin_edges = tf.linspace(0.0, max_dur, n_survival_bins + 1)
+        tte_expanded = tf.expand_dims(tte, 1)
+        bin_edges_expanded = tf.expand_dims(bin_edges, 0)
+        bin_idx = tf.reduce_sum(tf.cast(tte_expanded > bin_edges_expanded, tf.float32), axis=1)
+        bin_idx = tf.cast(tf.clip_by_value(bin_idx, 0, n_survival_bins - 1), tf.int32)
+        bin_mask = tf.one_hot(bin_idx, depth=n_survival_bins, dtype=tf.float32)
+        event_mask = tf.expand_dims(evt, 1)
+        censored_mask = 1.0 - event_mask
+        survival_labels = bin_mask * event_mask
+        censored_bins = tf.cast(
+            tf.sequence_mask(
+                tf.cast(tf.clip_by_value(
+                    tf.reduce_sum(tf.cast(tte_expanded > bin_edges_expanded, tf.float32), axis=1),
+                    0, n_survival_bins
+                ), tf.int32),
+                maxlen=n_survival_bins,
+            ),
+            tf.float32,
+        )
+        survival_labels = survival_labels + censored_bins * censored_mask
+        padded["survival_labels"] = survival_labels
         return padded
 
     ds = ds.padded_batch(
@@ -846,5 +869,141 @@ def create_padded_dataset(
         drop_remainder=False,
     )
 
+    ds = ds.prefetch(tf.data.AUTOTUNE)
+    return ds
+
+
+# ------------------------------------------------------------------ #
+#    Trainer-compatible dataset: yields (inputs_dict, targets_dict)   #
+# ------------------------------------------------------------------ #
+
+def create_trainer_dataset(
+    samples: List[WindowSample],
+    batch_size: int = 8,
+    shuffle: bool = True,
+    max_signal_length: int = 50000,
+) -> "tf.data.Dataset":
+    """Create a tf.data.Dataset that yields ``(inputs_dict, targets_dict)`` tuples.
+
+    This is the format expected by ``OHCATrainer``.  Inputs contain
+    sensor signals and static features; targets contain labels and
+    auxiliary supervision.
+
+    Args:
+        samples: List of ``WindowSample`` objects.
+        batch_size: Batch size.
+        shuffle: Whether to shuffle.
+        max_signal_length: Maximum signal length before truncation.
+
+    Returns:
+        A ``tf.data.Dataset`` yielding ``(inputs_dict, targets_dict)``.
+    """
+    input_keys = [
+        "ecg", "accelerometer", "gyroscope", "ppg",
+        "spo2", "temperature", "respiration",
+        "demographics", "medications", "comorbidities", "lab_values",
+    ]
+    target_keys = [
+        "ohca_label", "time_to_event", "event_indicator",
+        "heart_rate", "spo2_mean", "sbp_mean", "dbp_mean",
+    ]
+    int_target_keys = ["rhythm", "activity_state"]
+    signal_keys = [
+        "ecg", "accelerometer", "gyroscope", "ppg",
+        "spo2", "temperature", "respiration",
+    ]
+
+    def _sample_to_pair(s: WindowSample):
+        inputs = {}
+        targets = {}
+
+        for k in signal_keys:
+            arr = getattr(s, k)
+            if arr.ndim == 1:
+                arr = arr[:, np.newaxis]
+            if max_signal_length is not None and arr.shape[0] > max_signal_length:
+                arr = arr[:max_signal_length]
+            inputs[k] = tf.constant(arr, dtype=tf.float32)
+
+        for k in ["demographics", "medications", "comorbidities", "lab_values"]:
+            inputs[k] = tf.constant(getattr(s, k), dtype=tf.float32)
+
+        for k in target_keys:
+            val = getattr(s, k)
+            targets[k] = tf.constant([val], dtype=tf.float32)
+
+        for k in int_target_keys:
+            val = getattr(s, k)
+            targets[k] = tf.constant([val], dtype=tf.int32)
+
+        targets["heart_rate"] = tf.constant([s.heart_rate], dtype=tf.float32)
+
+        targets["survival_labels"] = tf.zeros((1, 13), dtype=tf.float32)
+
+        return inputs, targets
+
+    ds = tf.data.Dataset.from_generator(
+        lambda: (_sample_to_pair(s) for s in samples),
+        output_signature=(
+            {
+                k: tf.TensorSpec(shape=(None, None), dtype=tf.float32)
+                if k in signal_keys
+                else tf.TensorSpec(shape=(None,), dtype=tf.float32)
+                for k in input_keys
+            },
+            {
+                "ohca_label": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "time_to_event": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "event_indicator": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "heart_rate": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "spo2_mean": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "sbp_mean": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "dbp_mean": tf.TensorSpec(shape=(None,), dtype=tf.float32),
+                "rhythm": tf.TensorSpec(shape=(None,), dtype=tf.int32),
+                "activity_state": tf.TensorSpec(shape=(None,), dtype=tf.int32),
+                "survival_labels": tf.TensorSpec(shape=(None, 13), dtype=tf.float32),
+            },
+        ),
+    )
+
+    if shuffle:
+        ds = ds.shuffle(buffer_size=min(len(samples), 1000))
+
+    def _pad_pair(inputs, targets):
+        padded_inputs = {}
+        for key in signal_keys:
+            tensors = inputs[key]
+            max_len = tf.reduce_max([tf.shape(t)[0] for t in tensors])
+            padded_inputs[key] = tf.stack([
+                tf.pad(t, [(0, max_len - tf.shape(t)[0]), (0, 0)])
+                for t in tensors
+            ])
+        for key in ["demographics", "medications", "comorbidities", "lab_values"]:
+            padded_inputs[key] = tf.stack(inputs[key])
+
+        padded_targets = {}
+        for key in target_keys:
+            padded_targets[key] = tf.stack(targets[key])
+        for key in int_target_keys:
+            padded_targets[key] = tf.cast(tf.stack(targets[key]), tf.int32)
+
+        bs = tf.shape(padded_targets["ohca_label"])[0]
+        n_bins = 12
+        tte = padded_targets["time_to_event"]
+        evt = padded_targets["event_indicator"]
+        bin_edges = tf.linspace(0.0, 48.0, n_bins + 1)
+        tte_exp = tf.expand_dims(tte, 1)
+        be_exp = tf.expand_dims(bin_edges, 0)
+        bin_idx = tf.reduce_sum(tf.cast(tte_exp > be_exp, tf.float32), axis=1)
+        bin_idx = tf.cast(tf.clip_by_value(bin_idx, 0, n_bins - 1), tf.int32)
+        bin_mask = tf.one_hot(bin_idx, depth=n_bins, dtype=tf.float32)
+        evt_exp = tf.expand_dims(evt, 1)
+        surv = bin_mask * evt_exp
+        padded_targets["survival_labels"] = surv
+
+        return padded_inputs, padded_targets
+
+    ds = ds.padded_batch(batch_size, padding_values=0.0, drop_remainder=False)
+    ds = ds.map(_pad_pair, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.prefetch(tf.data.AUTOTUNE)
     return ds

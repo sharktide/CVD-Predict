@@ -678,6 +678,8 @@ class OHCAPredictionModel(keras.Model):
         # ---- 13. Token sequence assembly ----
         # [static(1, D) | attended_ecg(T, D) | multi_modal_ecg(T, D) |
         #  spo2(T, D) | temp(T, D) | resp(T, D)]
+        target_dtype = aligned_ecg.dtype
+        static_token = tf.cast(static_token, target_dtype)
         full_sequence = tf.concat(
             [
                 static_token,     # (batch, 1, D)
