@@ -1,4 +1,8 @@
-"""Training script for OHCA Prediction Model."""
+"""Training script for OHCA Prediction Model.
+
+WARNING: This is LEGACY. Please use the new training script at run_pipeline.py for future training runs.
+
+"""
 
 import argparse
 import sys

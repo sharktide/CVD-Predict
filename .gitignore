@@ -4,3 +4,7 @@ db
 models
 ohca_predictor.egg-info
 **/**/*.pyc
+*.pyc
+__pycache__/
+pipeline_data.pkl
+build

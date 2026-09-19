@@ -108,21 +108,33 @@ class OHCAPredictorPipeline:
         config: Optional[ModelConfig] = None,
         threshold: float = 0.20,
     ) -> "OHCAPredictorPipeline":
-        """Load a trained pipeline from a weights file.
+        """Load a trained pipeline from a weights file or Hugging Face model.
 
         The weights file should have been saved by the training pipeline.
         Config is loaded from the sibling ``config.json`` if present,
         otherwise uses defaults.
 
+        If the model is loaded from Hugging Face, the weights and config are downloaded automatically regardless of the local working directory and passed config.
+        To load a model from huggingface, ensure that it contians the "best_checkpoint.weights.h5" and "config.json" files at root, and use the model ID with the "hf://" prefix.
+
         Args:
-            weights_path: Path to ``.weights.h5`` file.
+            weights_path: Path to ``.weights.h5`` file or Hugging Face model ID. with hf:// prefix.
             config: Optional ModelConfig override.
             threshold: Classification threshold (default 0.20).
 
         Returns:
             Initialized OHCAPredictorPipeline.
         """
-        if config is None:
+        if weights_path.startswith("hf://"):
+            from huggingface_hub import hf_hub_download
+
+            model_id = weights_path[len("hf://") :]
+            weights_path = hf_hub_download(model_id, "best_checkpoint.weights.h5")
+            cfg_path = hf_hub_download(model_id, "config.json")
+            with open(cfg_path, "r") as f:
+                cfg_dict = json.load(f)
+            config = ModelConfig(**cfg_dict.get("model", cfg_dict))
+        elif config is None:
             cfg_path = os.path.join(os.path.dirname(weights_path), "config.json")
             if os.path.exists(cfg_path):
                 with open(cfg_path, "r") as f:
@@ -141,20 +153,21 @@ class OHCAPredictorPipeline:
         )
 
         # Build by running a dummy forward pass
-        dummy = cls._make_dummy_batch()
+        dummy = cls._make_dummy_batch(config)
         _ = model(dummy, training=False)
 
         # Load weights
-        model.load_weights(weights_path)
+        model.load_weights(weights_path, skip_mismatch=True)
         return cls(model=model, config=config, threshold=threshold)
 
     @classmethod
-    def _make_dummy_batch(cls) -> Dict[str, tf.Tensor]:
+    def _make_dummy_batch(cls, config: Optional[ModelConfig] = None) -> Dict[str, tf.Tensor]:
         """Create a minimal dummy batch for model building."""
-        T = cls.TOKENS_PER_MODALITY
+        T = config.tokens_per_modality if config else cls.TOKENS_PER_MODALITY
         return {
             "ecg": tf.zeros((1, T * 41, 1)),
             "accelerometer": tf.zeros((1, T * 16, 3)),
+            "gyroscope": tf.zeros((1, T * 16, 3)),
             "ppg": tf.zeros((1, T * 16, 1)),
             "demographics": tf.zeros((1, 24)),
             "medications": tf.zeros((1, 14)),
@@ -167,6 +180,17 @@ class OHCAPredictorPipeline:
             "heart_rate": tf.zeros((1, 1)),
             "rhythm": tf.zeros((1, 1)),
             "activity_state": tf.zeros((1, 1)),
+            
+            "spo2": tf.zeros((1, T * 16, 1)),
+            "sbp": tf.zeros((1, T * 16, 1)),
+            "dbp": tf.zeros((1, T * 16, 1)),
+            "temperature": tf.zeros((1, T * 16, 1)),
+            
+            # --- ADD THESE TWO LINES HERE ---
+            "respiration": tf.zeros((1, T * 16, 1)),     # Fixes KeyError: 'respiration'
+            "respiration_mean": tf.zeros((1, 1)),        # Preempts a potential mean check
+            # --------------------------------
+            
             "spo2_mean": tf.zeros((1, 1)),
             "sbp_mean": tf.zeros((1, 1)),
             "dbp_mean": tf.zeros((1, 1)),
@@ -192,6 +216,10 @@ class OHCAPredictorPipeline:
         medications: np.ndarray,
         comorbidities: np.ndarray,
         lab_values: np.ndarray,
+        gyroscope: Optional[np.ndarray] = None,
+        spo2: Optional[np.ndarray] = None,
+        temperature: Optional[np.ndarray] = None,
+        respiration: Optional[np.ndarray] = None,
     ) -> OHCAResult:
         """Run OHCA prediction on raw sensor data.
 
@@ -206,22 +234,50 @@ class OHCAPredictorPipeline:
             medications: Binary medication vector, shape ``(14,)``.
             comorbidities: Binary comorbidity vector, shape ``(14,)``.
             lab_values: Normalized lab values, shape ``(8,)``.
+            gyroscope: 3-axis gyroscope, shape ``(Q, 3)`` at 52 Hz (optional, zeros if omitted).
+            spo2: SpO2 waveform, shape ``(R,)`` at 10 Hz (optional, zeros if omitted).
+            temperature: Temperature waveform, shape ``(S,)`` at 1 Hz (optional, zeros if omitted).
+            respiration: Respiration waveform, shape ``(U,)`` at 25 Hz (optional, zeros if omitted).
 
         Returns:
             OHCAResult with risk, uncertainty, and survival curve.
         """
-        T = self.TOKENS_PER_MODALITY
+        T = self.config.tokens_per_modality
 
         # Resample signals to token count
         ecg_tokens = self._resample(ecg, self.ECG_HZ, T * 41)
         accel_tokens = self._resample(accelerometer, self.ACCEL_HZ, T * 16)
         ppg_tokens = self._resample(ppg, self.PPG_HZ, T * 16)
 
+        if gyroscope is not None:
+            gyro_tokens = self._resample(gyroscope, self.ACCEL_HZ, T * 16)
+        else:
+            gyro_tokens = np.zeros(T * 16, dtype=np.float32)
+
+        if spo2 is not None:
+            spo2_tokens = self._resample(spo2, 10, T * 16)
+        else:
+            spo2_tokens = np.zeros(T * 16, dtype=np.float32)
+
+        if temperature is not None:
+            temp_tokens = self._resample(temperature, 1, T * 16)
+        else:
+            temp_tokens = np.zeros(T * 16, dtype=np.float32)
+
+        if respiration is not None:
+            resp_tokens = self._resample(respiration, 25, T * 16)
+        else:
+            resp_tokens = np.zeros(T * 16, dtype=np.float32)
+
         # Build batch
         batch = {
             "ecg": tf.expand_dims(tf.expand_dims(ecg_tokens, 0), -1),
             "accelerometer": tf.expand_dims(accel_tokens, 0),
+            "gyroscope": tf.expand_dims(tf.expand_dims(gyro_tokens, 0), -1),
             "ppg": tf.expand_dims(tf.expand_dims(ppg_tokens, 0), -1),
+            "spo2": tf.expand_dims(tf.expand_dims(spo2_tokens, 0), -1),
+            "temperature": tf.expand_dims(tf.expand_dims(temp_tokens, 0), -1),
+            "respiration": tf.expand_dims(tf.expand_dims(resp_tokens, 0), -1),
             "demographics": tf.expand_dims(
                 tf.cast(demographics, tf.float32), 0
             ),

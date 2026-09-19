@@ -490,15 +490,15 @@ class OHCAPredictionModel(keras.Model):
         )
         self.spo2_tokenizer = AuxSignalTokenizer(
             model_dim=D, target_tokens=T_tokens,
-            dropout_rate=config.dropout_rate, name="spo2_tokenizer",
+            dropout_rate=config.dropout_rate,
         )
         self.temp_tokenizer = AuxSignalTokenizer(
             model_dim=D, target_tokens=T_tokens,
-            dropout_rate=config.dropout_rate, name="temp_tokenizer",
+            dropout_rate=config.dropout_rate,
         )
         self.resp_tokenizer = AuxSignalTokenizer(
             model_dim=D, target_tokens=T_tokens,
-            dropout_rate=config.dropout_rate, name="resp_tokenizer",
+            dropout_rate=config.dropout_rate,
         )
 
         # ---- Static Patient Embedding ----
@@ -509,7 +509,6 @@ class OHCAPredictionModel(keras.Model):
             num_labs=num_labs,
             static_embedding_dim=D,
             dropout_rate=config.dropout_rate,
-            name="static_embedding",
         )
 
         # ---- Cross-Modal Attention ----
@@ -519,16 +518,22 @@ class OHCAPredictionModel(keras.Model):
             num_heads=config.num_attention_heads,
             attention_dropout=config.attention_dropout_rate,
             value_dropout=config.dropout_rate,
-            name="ecg_motion_cross_attn",
+            name="ecg_motion_attention",
         )
-
+        self.hierarchical_cross_attention = HierarchicalCrossAttention(
+            model_dim=D,
+            num_heads=config.num_attention_heads,
+            attention_dropout=config.attention_dropout_rate,
+            value_dropout=config.dropout_rate,
+            name="hierarchical_cross_attention",
+        )
         # Multi-modal ECG attends to PPG
         self.ecg_ppg_attention = AsymmetricCrossAttention(
             model_dim=D,
             num_heads=config.num_attention_heads,
             attention_dropout=config.attention_dropout_rate,
             value_dropout=config.dropout_rate,
-            name="ecg_ppg_cross_attn",
+            name="ecg_ppg_attention",
         )
 
         # ---- Sequence Alignment (adaptive pooling to common length T) ----
@@ -576,7 +581,7 @@ class OHCAPredictionModel(keras.Model):
             model_dim=D,
             num_survival_bins=config.num_survival_bins,
             use_cls_token=True,
-            name="survival_head",
+            name="survival_analysis_head",
         )
         self.uncertainty_head = UncertaintyHead(
             model_dim=D,
@@ -656,21 +661,20 @@ class OHCAPredictionModel(keras.Model):
         )  # (batch, T_accel + T_gyro, D)
 
         # ---- 10. ECG attends to motion ----
-        attended_ecg = self.ecg_motion_attention(
-            ecg_tokens=ecg_tokens,
-            context_tokens=motion_tokens,
-            training=training,
-        )  # (batch, T_ecg, D)
+# Concatenate all non-ECG modalities into one context
+        context_tokens = tf.concat(
+            [motion_tokens, ppg_tokens, spo2_tokens, temp_tokens, resp_tokens],
+            axis=1
+        )
 
-        # ---- 11. Multi-modal ECG attends to PPG ----
-        multi_modal_ecg = self.ecg_ppg_attention(
-            ecg_tokens=attended_ecg,
-            context_tokens=ppg_tokens,
-            training=training,
-        )  # (batch, T_ecg, D)
+        # Apply hierarchical cross-attention: ECG queries all modalities jointly
+        fused_ecg = self.hierarchical_cross_attention(
+            ecg_tokens, context_tokens, training=training
+        )
+
 
         # ---- 12. Sequence alignment to common length T ----
-        aligned_ecg = self.align_pool_ecg(multi_modal_ecg)
+        aligned_ecg = self.align_pool_ecg(fused_ecg)
         aligned_spo2 = self.align_pool_spo2(spo2_tokens)
         aligned_temp = self.align_pool_temp(temp_tokens)
         aligned_resp = self.align_pool_resp(resp_tokens)

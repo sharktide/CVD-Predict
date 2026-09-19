@@ -17,7 +17,6 @@ import sys
 import time
 import traceback
 import warnings
-
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 os.environ["CUDA_LAUNCH_BLOCKING"] = "0"
@@ -48,6 +47,7 @@ else:
 
 print(f"[INIT] TF {tf.__version__}  |  GPUs: {gpus}")
 
+tf.config.experimental.enable_tensor_float_32_execution(True)
 from ohca_predictor.config import (
     SimulationConfig, TrainingConfig, ModelConfig, EvaluationConfig,
     override_config,
@@ -59,6 +59,7 @@ from ohca_predictor.model.losses import CombinedOHCALoss
 from ohca_predictor.training.trainer import CosineDecayWithWarmup
 from ohca_predictor.evaluation.metrics import OHCAEvaluator
 from ohca_predictor.evaluation.calibration import CalibrationAnalyzer
+from sklearn.metrics import accuracy_score
 
 # ── Constants ──────────────────────────────────────────────────────
 PIPELINE_TIMEOUT_SECONDS = 12 * 3600
@@ -100,7 +101,6 @@ signal.alarm(PIPELINE_TIMEOUT_SECONDS)
 # ═══════════════════════════════════════════════════════════════════
 # CONFIG
 # ═══════════════════════════════════════════════════════════════════
-
 def make_config():
     return override_config(
         simulation=SimulationConfig(
@@ -572,7 +572,6 @@ def phase2_train(config, train_samples, val_samples):
     with open(hist_path, "w") as f:
         json.dump(clinical_cb.history, f, indent=2, default=str)
     log(f"  Training history saved: {hist_path}")
-
     return ohca_model, clinical_cb.history, clinical_cb.best_auroc
 
 
