@@ -63,12 +63,12 @@ def main():
         model=ModelConfig(
             model_dim=128,
             num_attention_heads=4,
-            num_encoder_layers=3,
-            feedforward_dim=512,
-            dropout_rate=0.15,
-            tokens_per_modality=256,
+            num_encoder_layers=4,
+            feedforward_dim=256,
+            dropout_rate=0.3,
+            tokens_per_modality=64,
             max_positional_encoding=4096,
-            static_embedding_dim=48,
+            static_embedding_dim=64,
         ),
         evaluation=EvaluationConfig(
             bootstrap_iterations=500,
